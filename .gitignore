@@ -1,0 +1,8 @@
+.vs/
+EventManager.WebAPI/bin/
+EventManager.WebAPI/obj/
+EventManager.WebAPI/*.user
+EventManager.WebAPI/*.suo
+EventManager.WebAPI/TestResults/
+EventManager.WebAPI/appsettings.json
+EventManager.WebAPI/appsettings.Development.json

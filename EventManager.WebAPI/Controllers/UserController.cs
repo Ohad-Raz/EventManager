@@ -1,0 +1,194 @@
+﻿using EventManager.WebAPI.Dtos;
+using EventManager.WebAPI.Models;
+using EventManager.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace EventManager.WebAPI.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class UserController : ControllerBase
+    {
+        // Access to appsettings.json, needed for JWT secure key
+        private readonly IConfiguration _configuration;
+
+        // Database context, injected by DI
+        private readonly EventManagerDbContext _context;
+
+        public UserController(IConfiguration configuration, EventManagerDbContext context)
+        {
+            _configuration = configuration;
+            _context = context;
+        }
+
+        /// <summary>
+        /// Registers a new user in the database.
+        /// Password is never stored directly, only hash + salt.
+        /// Default role is User (RoleId = 2).
+        /// </summary>
+        [HttpPost("[action]")]
+        public ActionResult<UserDto> Register(UserDto userDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+                // Remove accidental spaces around username
+                string trimmedUsername = userDto.Username.Trim();
+
+                // Prevent duplicate usernames
+                if (_context.Users.Any(x => x.Username == trimmedUsername))
+                    return BadRequest($"Username {trimmedUsername} already exists");
+
+                // Prevent duplicate e-mails
+                if (_context.Users.Any(x => x.Email == userDto.Email))
+                    return BadRequest($"Email {userDto.Email} already exists");
+
+                // Create salt and hash for the entered password
+                string b64salt = PasswordHashProvider.GetSalt();
+                string b64hash = PasswordHashProvider.GetHash(userDto.Password, b64salt);
+
+                // Create database User entity from DTO
+                User user = new User
+                {
+                    Username = trimmedUsername,
+                    PwdHash = b64hash,
+                    PwdSalt = b64salt,
+                    FirstName = userDto.FirstName,
+                    LastName = userDto.LastName,
+                    Email = userDto.Email,
+                    Phone = userDto.Phone,
+                    RoleId = 2 // default role = User
+                };
+
+                // Save new user to database
+                _context.Users.Add(user);
+                _context.SaveChanges();
+
+                // Return generated Id to the client
+                userDto.Id = user.Id;
+
+                // Never send password back in response
+                userDto.Password = string.Empty;
+
+                return Ok(userDto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Logs in an existing user.
+        /// Checks username + password hash, then returns JWT token.
+        /// </summary>
+        [HttpPost("[action]")]
+        public ActionResult Login(UserLoginDto userDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+                string genericLoginFail = "Incorrect username or password";
+
+                // Find the user by username and also load Role,
+                // because we want to store role name inside JWT
+                User? existingUser = _context.Users
+                    .Include(x => x.Role)
+                    .FirstOrDefault(x => x.Username == userDto.Username);
+
+                // User not found
+                if (existingUser == null)
+                    return BadRequest(genericLoginFail);
+
+                // Hash entered password using the user's stored salt
+                string b64hash = PasswordHashProvider.GetHash(userDto.Password, existingUser.PwdSalt);
+
+                // Compare calculated hash with stored hash
+                if (b64hash != existingUser.PwdHash)
+                    return BadRequest(genericLoginFail);
+
+                // Read secure key from configuration
+                string? secureKey = _configuration["JWT:SecureKey"];
+
+                if (string.IsNullOrEmpty(secureKey))
+                    return StatusCode(500, "JWT secure key is missing.");
+
+                // Read role name from related Role entity
+                string roleName = existingUser.Role.Name;
+
+                // Create token with username + role claim
+                string serializedToken = JwtTokenProvider.CreateToken(
+                    secureKey,
+                    120,
+                    existingUser.Username,
+                    roleName
+                );
+
+                return Ok(serializedToken);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [Authorize]
+        [HttpPost("[action]")]
+        public ActionResult ChangePassword(ChangePasswordDto changePassDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                string genericLoginFail = "Incorrect username or password";
+
+                // Get username from JWT
+                string? username = HttpContext.User.Identity?.Name;
+
+                // Find logged-in user
+                User? existingUser = _context.Users
+                    .FirstOrDefault(x => x.Username == username);
+
+                if (existingUser == null)
+                    return BadRequest(genericLoginFail);
+
+                // Check new password rules
+                if (!changePassDto.NewPasswordsMatch())
+                    return BadRequest("Passwords do not match.");
+
+                if (!changePassDto.IsDifferentFromCurrent())
+                    return BadRequest("New password must be different from current password.");
+
+                // Verify CURRENT password using existing salt
+                string currentHash = PasswordHashProvider.GetHash(changePassDto.CurrentPassword, existingUser.PwdSalt);
+
+                if (currentHash != existingUser.PwdHash)
+                    return BadRequest(genericLoginFail);
+
+                // Generate new salt and hash for NEW password
+                string newSalt = PasswordHashProvider.GetSalt();
+                string newHash = PasswordHashProvider.GetHash(changePassDto.NewPassword, newSalt);
+
+                existingUser.PwdSalt = newSalt;
+                existingUser.PwdHash = newHash;
+
+                _context.SaveChanges();
+
+                return Ok("Password changed successfully");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+    }
+}
