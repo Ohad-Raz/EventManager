@@ -190,5 +190,37 @@ namespace EventManager.WebAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("[action]")]
+        public ActionResult PromoteUser(PromoteUserDto promoteUDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                // 1. find target user
+                User? existingUser = _context.Users
+              .FirstOrDefault(x => x.Id == promoteUDto.UserId);
+
+                // 2. if not found, return NotFound
+                // User not found
+                if (existingUser == null)
+                    return NotFound("User Not Found");
+                // 3. if already admin, maybe return BadRequest or Ok
+                if (existingUser.RoleId == 1)
+                    return BadRequest("User is already an admin.");
+                // 4. set RoleId = 1
+                existingUser.RoleId = 1;//ref tracking 
+                // 5. save changes
+                _context.SaveChanges();
+                return Ok("User promoted successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }

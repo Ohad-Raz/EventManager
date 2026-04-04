@@ -46,7 +46,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 // Configure JWT security services
 builder.Services.AddDbContext<EventManagerDbContext>(options => {
-    options.UseSqlServer("name=ConnectionStrings:ex6cs");
+    options.UseSqlServer("name=ConnectionStrings:DefaultConn");
 });
 var secureKey = builder.Configuration["JWT:SecureKey"];
 builder.Services
