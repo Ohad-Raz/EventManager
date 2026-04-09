@@ -203,7 +203,6 @@ namespace EventManager.WebAPI.Controllers
                 // 1. find target user
                 User? existingUser = _context.Users
               .FirstOrDefault(x => x.Id == promoteUDto.UserId);
-
                 // 2. if not found, return NotFound
                 // User not found
                 if (existingUser == null)
