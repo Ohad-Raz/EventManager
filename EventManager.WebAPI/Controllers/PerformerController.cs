@@ -1,4 +1,5 @@
-﻿using EventManager.WebAPI.Dtos;
+using AutoMapper;
+using EventManager.WebAPI.Dtos;
 using EventManager.WebAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,21 +11,14 @@ namespace EventManager.WebAPI.Controllers
     [Authorize]
     public class PerformerController : ControllerBase
     {
+        private readonly IMapper _mapper;
         // Database context, injected by DI
         private readonly EventManagerDbContext _context;
 
-        public PerformerController(EventManagerDbContext context)
+        public PerformerController(EventManagerDbContext context, IMapper mapper)
         {
             _context = context;
-        }
-        private static PerformerDto MapToDto(Performer performer)
-        {
-            return new PerformerDto
-            {
-                Id = performer.Id,
-                Name = performer.Name,
-                Bio = performer.Bio
-            };
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -39,11 +33,9 @@ namespace EventManager.WebAPI.Controllers
                 // 1. load all performers from database
                 List<Performer> performers = _context.Performers.ToList();
                 // 2. map entities to DTOs
-                List<PerformerDto> result = performers.Select(p => MapToDto(p)).ToList();
+                List<PerformerDto> result = _mapper.Map<List<PerformerDto>>(performers);
                 // 3. return DTO list
                 return Ok(result);
-                //auto mapper
-                //
             }
             catch (Exception ex)
             {
@@ -53,6 +45,7 @@ namespace EventManager.WebAPI.Controllers
 
         /// <summary>
         /// Returns one performer by id.
+        /// Endpoint: GET /api/Performer/{id}
         /// </summary>
         [HttpGet("{id}")]
         public ActionResult<PerformerDto> Get(int id)
@@ -65,7 +58,7 @@ namespace EventManager.WebAPI.Controllers
                 // 2. if not found, return NotFound
                 if (performer == null) return NotFound($"Performer with id={id} was not found.");
                 // 3. map entity to DTO
-                PerformerDto result = MapToDto(performer);
+                PerformerDto result = _mapper.Map<PerformerDto>(performer);
                 // 4. return DTO
                 return Ok(result);
 
@@ -78,6 +71,7 @@ namespace EventManager.WebAPI.Controllers
 
         /// <summary>
         /// Creates a new performer.
+        /// Endpoint: POST /api/Performer
         /// Only Admin and Organizer are allowed to access this endpoint.
         /// </summary>
         [Authorize(Roles = "Admin,Organizer")]
@@ -89,11 +83,7 @@ namespace EventManager.WebAPI.Controllers
                 // 1. validate model state
                 if (!ModelState.IsValid) return BadRequest(ModelState);
                 // 2. create new performer entity
-                Performer newPerformer = new Performer
-                {
-                    Name = performerDto.Name,
-                    Bio = performerDto.Bio,
-                };
+                Performer newPerformer = _mapper.Map<Performer>(performerDto);
                 // 3. save to database
                 _context.Performers.Add(newPerformer);
                 _context.SaveChanges();
@@ -110,6 +100,7 @@ namespace EventManager.WebAPI.Controllers
 
         /// <summary>
         /// Updates an existing performer.
+        /// Endpoint: PUT /api/Performer/{id}
         /// Only Admin and Organizer are allowed to access this endpoint.
         /// </summary>
         [Authorize(Roles = "Admin,Organizer")]
@@ -126,8 +117,7 @@ namespace EventManager.WebAPI.Controllers
                 // 3. if not found, return NotFound
                 if (performer == null) return NotFound($"Performer with id={id} was not found.");
                 // 4. update editable fields
-                performer.Name = performerDto.Name;
-                performer.Bio = performerDto.Bio;
+                _mapper.Map(performerDto, performer);
                 // 5. save changes
                 _context.SaveChanges();
                 // 6. copy id back to DTO if needed
@@ -143,6 +133,7 @@ namespace EventManager.WebAPI.Controllers
 
         /// <summary>
         /// Deletes a performer by id.
+        /// Endpoint: DELETE /api/Performer/{id}
         /// Only Admins are allowed to access this endpoint.
         /// </summary>
         [Authorize(Roles = "Admin")]

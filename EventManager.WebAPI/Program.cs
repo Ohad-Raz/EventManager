@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using EventManager.WebAPI.Models;
+using EventManager.WebAPI.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +42,7 @@ builder.Services.AddSwaggerGen(option =>
         });
 });
 builder.Services.AddControllers();
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

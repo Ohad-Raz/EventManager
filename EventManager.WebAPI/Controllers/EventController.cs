@@ -1,11 +1,9 @@
-﻿using EventManager.WebAPI.Dtos;
+using AutoMapper;
+using EventManager.WebAPI.Dtos;
 using EventManager.WebAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace EventManager.WebAPI.Controllers
 {
@@ -13,16 +11,19 @@ namespace EventManager.WebAPI.Controllers
     [ApiController]
     public class EventController : ControllerBase
     {
+        private readonly IMapper _mapper;
         // Database context, injected by DI
         private readonly EventManagerDbContext _context;
 
-        public EventController(EventManagerDbContext context)
+        public EventController(EventManagerDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         /// <summary>
         /// Returns all events with related event type and image data.
+        /// Endpoint: GET /api/Event
         /// </summary>
         [HttpGet]
         public ActionResult<ICollection<EventDto>> Get()
@@ -33,10 +34,7 @@ namespace EventManager.WebAPI.Controllers
                 List<Event> events = _context.Events.ToList();
 
                 // 2. map entities to DTOs
-
-                List<EventDto> result = events
-             .Select(e => MapToDto(e))
-             .ToList();
+                List<EventDto> result = _mapper.Map<List<EventDto>>(events);
 
                 // 3. return DTO list
                 return Ok(result);
@@ -49,6 +47,7 @@ namespace EventManager.WebAPI.Controllers
 
         /// <summary>
         /// Returns one event by id.
+        /// Endpoint: GET /api/Event/{id}
         /// </summary>
         [HttpGet("{id}")]
         public ActionResult<EventDto> Get(int id)
@@ -60,7 +59,7 @@ namespace EventManager.WebAPI.Controllers
                 // 2. if not found, return NotFound
                 if (eventById == null) return NotFound("Event not found.");
                 // 3. map entity to DTO
-                EventDto result = MapToDto(eventById);
+                EventDto result = _mapper.Map<EventDto>(eventById);
                 // 4. return DTO
                 return Ok(result);
             }
@@ -71,7 +70,60 @@ namespace EventManager.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Searches events by text, optional event type, and paging.
+        /// Endpoint: GET /api/Event/Search?q={text}&eventTypeId={id}&page={page}&count={count}
+        /// </summary>
+        [HttpGet("[action]")]
+        public ActionResult<ICollection<EventDto>> Search(string? q, int? eventTypeId, int page = 1, int count = 10)
+        {
+            try
+            {
+                // 1. validate paging input
+                if (page < 1)
+                    return BadRequest("Page must be at least 1.");
+
+                if (count < 1)
+                    return BadRequest("Count must be at least 1.");
+
+                // 2. start query from Events table
+                IQueryable<Event> query = _context.Events.AsQueryable();
+
+                // 3. if q has value, filter by Name or Description, case insensitive by default
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    query = query.Where(e =>
+                        e.Name.Contains(q) ||
+                        e.Description.Contains(q));
+                }
+                // 4. if eventTypeId has value, filter by EventTypeId
+                if (eventTypeId.HasValue)
+                {
+                    query = query.Where(e => e.EventTypeId == eventTypeId.Value);
+                }
+                // 5. apply paging
+                // Skip rows from previous pages, then take only the requested page size
+                // Example: page=2 and count=10 means skip first 10 rows, then take next 10
+                query = query
+                    .Skip((page - 1) * count)
+                    .Take(count);
+
+                // 6. execute query and load matching events
+                List<Event> events = query.ToList();
+
+                // 7. map entities to DTOs
+                List<EventDto> result = _mapper.Map<List<EventDto>>(events);
+
+                // 8. return DTO list
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+        /// <summary>
         /// Creates a new event.
+        /// Endpoint: POST /api/Event
         /// Only Admin and Organizer are allowed to access this endpoint.
         /// </summary>
         [Authorize(Roles = "Admin,Organizer")]
@@ -105,7 +157,6 @@ namespace EventManager.WebAPI.Controllers
 
                 if (existingEventType == null)
                     return NotFound("Event type not found.");
-
                 // 7. validate optional Image
                 if (eventDto.ImageId.HasValue)
                 {
@@ -115,20 +166,9 @@ namespace EventManager.WebAPI.Controllers
                     if (existingImage == null)
                         return NotFound("Image not found.");
                 }
-
                 // 8. create new Event entity
-                Event newEvent = new Event
-                {
-                    Name = eventDto.Name,
-                    Description = eventDto.Description,
-                    StartTime = eventDto.StartTime,
-                    EndTime = eventDto.EndTime,
-                    Location = eventDto.Location,
-                    Capacity = eventDto.Capacity,
-                    EventTypeId = eventDto.EventTypeId,
-                    ImageId = eventDto.ImageId,
-                    CreatedById = existingUser.Id
-                };
+                Event newEvent = _mapper.Map<Event>(eventDto);
+                newEvent.CreatedById = existingUser.Id;
 
                 // 9. save to database
                 _context.Events.Add(newEvent);
@@ -148,6 +188,7 @@ namespace EventManager.WebAPI.Controllers
 
         /// <summary>
         /// Updates an existing event.
+        /// Endpoint: PUT /api/Event/{id}
         /// Only Admin and Organizer are allowed to access this endpoint.
         /// </summary>
         [Authorize(Roles = "Admin,Organizer")]
@@ -185,14 +226,7 @@ namespace EventManager.WebAPI.Controllers
                 }
 
                 // 5. update editable fields
-                existingEvent.Name = eventDto.Name;
-                existingEvent.Description = eventDto.Description;
-                existingEvent.StartTime = eventDto.StartTime;
-                existingEvent.EndTime = eventDto.EndTime;
-                existingEvent.Location = eventDto.Location;
-                existingEvent.Capacity = eventDto.Capacity;
-                existingEvent.EventTypeId = eventDto.EventTypeId;
-                existingEvent.ImageId = eventDto.ImageId;
+                _mapper.Map(eventDto, existingEvent);
 
                 // 6. save changes
                 _context.SaveChanges();
@@ -209,6 +243,7 @@ namespace EventManager.WebAPI.Controllers
 
         /// <summary>
         /// Deletes an event by id.
+        /// Endpoint: DELETE /api/Event/{id}
         /// Only Admin and Organizer are allowed to access this endpoint.
         /// </summary>
         [Authorize(Roles = "Admin,Organizer")]
@@ -234,23 +269,9 @@ namespace EventManager.WebAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
-        public static EventDto MapToDto(Event e)
-        {
-            return new EventDto
-            {
-                Id = e.Id,
-                Name = e.Name,
-                Description = e.Description,
-                StartTime = e.StartTime,
-                EndTime = e.EndTime,
-                Location = e.Location,
-                Capacity = e.Capacity,
-                EventTypeId = e.EventTypeId,
-                ImageId = e.ImageId
-            };
-        }
         /// <summary>
         /// Returns all performers assigned to a given event.
+        /// Endpoint: GET /api/Event/{id}/Performers
         /// </summary>
         [HttpGet("{id}/Performers")]
         public ActionResult<ICollection<PerformerDto>> GetPerformers(int id)

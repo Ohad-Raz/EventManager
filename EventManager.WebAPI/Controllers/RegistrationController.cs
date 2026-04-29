@@ -1,9 +1,9 @@
-﻿using EventManager.WebAPI.Dtos;
+using AutoMapper;
+using EventManager.WebAPI.Dtos;
 using EventManager.WebAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EventManager.WebAPI.Controllers
 {
@@ -11,17 +11,20 @@ namespace EventManager.WebAPI.Controllers
     [ApiController]
     public class RegistrationController : ControllerBase
     {
+        private readonly IMapper _mapper;
         // Database context, injected by DI
         private readonly EventManagerDbContext _context;
 
-        public RegistrationController(EventManagerDbContext context)
+        public RegistrationController(EventManagerDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         /// <summary>
         /// Creates a new event registration for the logged-in user.
         /// Prevents duplicate registration for the same event.
+        /// Endpoint: POST /api/Registration
         /// </summary>
         [Authorize]
         [HttpPost]
@@ -89,6 +92,7 @@ namespace EventManager.WebAPI.Controllers
 
         /// <summary>
         /// Returns all registrations with related user and event data.
+        /// Endpoint: GET /api/Registration
         /// Only Admins are allowed to access this endpoint.
         /// </summary>
         [Authorize(Roles = "Admin")]
@@ -104,18 +108,7 @@ namespace EventManager.WebAPI.Controllers
                     .ToList();
 
                 // 2. map entities to DTOs
-                List<RegistrationDetailsDto> result = registrations
-                    .Select(x => new RegistrationDetailsDto
-                    {
-                        Id = x.Id,
-                        Name = x.Name,
-                        EventId = x.EventId,
-                        EventName = x.Event.Name,
-                        Username = x.User.Username,
-                        IsActive = x.IsActive,
-                        RegisteredAt = x.RegisteredAt
-                    })
-                    .ToList();
+                List<RegistrationDetailsDto> result = _mapper.Map<List<RegistrationDetailsDto>>(registrations);
 
                 // 3. return DTO list
                 return Ok(result);
@@ -128,6 +121,7 @@ namespace EventManager.WebAPI.Controllers
 
         /// <summary>
         /// Returns one registration by id with related user and event data.
+        /// Endpoint: GET /api/Registration/{id}
         /// Only Admins are allowed to access this endpoint.
         /// </summary>
         [Authorize(Roles = "Admin")]
@@ -147,16 +141,7 @@ namespace EventManager.WebAPI.Controllers
                     return NotFound("Registration not found.");
 
                 // 3. map entity to DTO
-                RegistrationDetailsDto result = new RegistrationDetailsDto
-                {
-                    Id = registration.Id,
-                    Name = registration.Name,
-                    EventId = registration.EventId,
-                    EventName = registration.Event.Name,
-                    Username = registration.User.Username,
-                    IsActive = registration.IsActive,
-                    RegisteredAt = registration.RegisteredAt
-                };
+                RegistrationDetailsDto result = _mapper.Map<RegistrationDetailsDto>(registration);
 
                 // 4. return tdo
                 return Ok(result);
@@ -170,6 +155,7 @@ namespace EventManager.WebAPI.Controllers
         /// Returns registrations for the currently logged-in user.
         /// Includes related event data.
         /// Available to any authenticated user.
+        /// Endpoint: GET /api/Registration/GetMyRegistrations
         /// </summary>
         [Authorize]
         [HttpGet("[action]")]
@@ -192,18 +178,7 @@ namespace EventManager.WebAPI.Controllers
                     .ToList();
 
                 // 4. map entities to DTOs
-                List<RegistrationDetailsDto> result = registrations
-                    .Select(x => new RegistrationDetailsDto
-                    {
-                        Id = x.Id,
-                        Name = x.Name,
-                        EventId = x.EventId,
-                        EventName = x.Event.Name,
-                        Username = x.User.Username,
-                        IsActive = x.IsActive,
-                        RegisteredAt = x.RegisteredAt
-                    })
-                    .ToList();
+                List<RegistrationDetailsDto> result = _mapper.Map<List<RegistrationDetailsDto>>(registrations);
 
                 // 5. return DTO list
                 return Ok(result);
