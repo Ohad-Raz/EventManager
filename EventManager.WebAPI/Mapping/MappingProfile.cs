@@ -21,6 +21,7 @@ namespace EventManager.WebAPI.Mapping
             // Some members are ignored because they are controlled by the server
             // or represent navigation properties that should not be mapped directly.
             CreateMap<EventDto, Event>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedById, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.EventPerformers, opt => opt.Ignore())
@@ -34,7 +35,8 @@ namespace EventManager.WebAPI.Mapping
 
             // PerformerDto -> Performer entity
             // Used when creating or updating performer records.
-            CreateMap<PerformerDto, Performer>();
+            CreateMap<PerformerDto, Performer>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore());
 
             // Registration entity -> RegistrationDetailsDto
             // Includes data from related entities:

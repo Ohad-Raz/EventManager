@@ -23,6 +23,8 @@ public partial class EventManagerDbContext : DbContext
 
     public virtual DbSet<Image> Images { get; set; }
 
+    public virtual DbSet<Log> Logs { get; set; }
+
     public virtual DbSet<Performer> Performers { get; set; }
 
     public virtual DbSet<Registration> Registrations { get; set; }
@@ -32,7 +34,7 @@ public partial class EventManagerDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Name=DefaultConn");
+        => optionsBuilder.UseSqlServer("Name=ConnectionStrings:DefaultConn");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -95,6 +97,14 @@ public partial class EventManagerDbContext : DbContext
             entity.Property(e => e.FileName).HasMaxLength(255);
             entity.Property(e => e.FilePath).HasMaxLength(500);
             entity.Property(e => e.Name).HasMaxLength(150);
+        });
+
+        modelBuilder.Entity<Log>(entity =>
+        {
+            entity.ToTable("Log");
+
+            entity.Property(e => e.Message).HasMaxLength(1024);
+            entity.Property(e => e.Timestamp).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<Performer>(entity =>

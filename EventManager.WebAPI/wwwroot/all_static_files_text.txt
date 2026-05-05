@@ -1,0 +1,288 @@
+===== register.js =====
+function register() {
+    $("#spinner-placeholder").addClass("spinner");
+    $("#register-button").prop("disabled", true);
+
+    let registerUrl = "http://localhost:5127/api/User/Register";
+    let registerData = {
+        "firstName": $("#firstName").val(),
+        "lastName": $("#lastName").val(),
+        "email": $("#email").val(),
+        "phone": $("#phone").val(),
+        "username": $("#username").val(),
+        "password": $("#password").val()
+    }
+    $.ajax({
+        method: "POST",
+        url: registerUrl,
+        data: JSON.stringify(registerData),
+        contentType: 'application/json'
+    }).done(function (tokenData) {
+        //console.log(tokenData);
+
+        // Do login after registration
+        jwtLogin();
+    }).fail(function (err) {
+        alert(err.responseText);
+
+        localStorage.removeItem("JWT");
+        $("#spinner-placeholder").removeClass("spinner");
+        $("#register-button").prop("disabled", false);
+    });
+}
+
+===== logs.js =====
+const logsGetByCountUrl = "http://localhost:5127/api/logs/get";
+const logsCountUrl = "http://localhost:5127/api/logs/count";
+// TODO: replace endpoint if my backend route differs
+
+function jwtLogout() {
+    localStorage.removeItem("JWT");
+    window.location.href = "login.html";
+}
+
+function renderLogsTable(logs) {
+    const $ph = $("#placeholder");
+    $ph.html("");
+
+    if (!Array.isArray(logs) || logs.length === 0) {
+        $ph.html('<div class="alert alert-info">No logs found.</div>');
+        return;
+    }
+
+    let rows = "";
+    for (let logItem of logs) {
+        const id = logItem?.id ?? "-";
+        const timestamp = logItem?.timestamp ?? logItem?.timeStamp ?? logItem?.createdAt ?? "-";
+        const level = logItem?.level ?? "-";
+        const message = logItem?.message ?? logItem?.text ?? "-";
+        // TODO: adjust rendering once final Log DTO shape is confirmed
+
+        rows += `<tr>
+            <td>${id}</td>
+            <td>${timestamp}</td>
+            <td>${level}</td>
+            <td>${message}</td>
+        </tr>`;
+    }
+
+    const html = `<div class="table-responsive">
+        <table class="table table-striped table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>Level</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+
+    $ph.append(html);
+}
+
+function loadLogs() {
+    // 1. check JWT in localStorage and redirect to login if missing
+    const jwt = localStorage.getItem("JWT");
+    if (!jwt) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    $("#refresh-spinner-placeholder").addClass("spinner");
+    $("#refresh-button").prop("disabled", true);
+
+    // 2. read selected log count from dropdown
+    const selectedCount = $("#log-count").val();
+    const requestUrl = `${logsGetByCountUrl}/${selectedCount}`;
+
+    // 3. call logs endpoint with Authorization header
+    $.ajax({
+        url: requestUrl,
+        headers: { "Authorization": `Bearer ${jwt}` }
+    }).done(function (logsData) {
+        $("#refresh-spinner-placeholder").removeClass("spinner");
+        $("#refresh-button").prop("disabled", false);
+
+        // 4. render logs into placeholder
+        renderLogsTable(logsData);
+    }).fail(function () {
+        $("#refresh-spinner-placeholder").removeClass("spinner");
+        $("#refresh-button").prop("disabled", false);
+
+        // 5. handle request error
+        $("#placeholder").html('<div class="alert alert-danger">There was an error while trying to load logs.</div>');
+    });
+}
+
+$(function () {
+    // 1. check JWT in localStorage and redirect to login if missing
+    const jwt = localStorage.getItem("JWT");
+    if (!jwt) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    // Optional call for future use
+    // TODO: use logsCountUrl endpoint if you want to display total log count on page
+    loadLogs();
+});
+
+===== logs.html =====
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Logs</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="spinner.css" />
+    <link rel="stylesheet" href="logs.css" />
+</head>
+<body>
+    <nav>
+        <h2>Log list</h2>
+        <ul>
+            <li><a href="logs.html">Logs</a></li>
+            <li><a href="javascript:void(0);" onclick="jwtLogout()">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container mt-3">
+        <div class="row m-3 align-items-center">
+            <div class="col-auto">
+                <label for="log-count" class="col-form-label">Show logs:</label>
+            </div>
+            <div class="col-auto">
+                <select id="log-count" class="form-select">
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button id="refresh-button" class="btn btn-primary" onclick="loadLogs()">
+                    Refresh
+                    <span id="refresh-spinner-placeholder"></span>
+                </button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col" id="placeholder"></div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"></script>
+    <script src="logs.js"></script>
+</body>
+</html>
+
+===== logs.css =====
+body {
+    font-family: Arial, Tahoma, Serif;
+    color: #263238;
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: #cfd8dc;
+}
+
+    nav ul {
+        display: flex;
+        list-style: none;
+    }
+
+    nav li {
+        padding-left: 1rem;
+    }
+
+    nav a {
+        text-decoration: none;
+        color: #0d47a1
+    }
+
+        nav a:hover {
+            opacity: 0.5;
+        }
+
+===== login.js =====
+let loginUrl = "http://localhost:5127/api/User/Login";
+
+function jwtLogin() {
+    $("#spinner-placeholder").addClass("spinner");
+    $("#login-button").prop("disabled", true);
+
+    let loginData = {
+        "username": $("#username").val(),
+        "password": $("#password").val()
+    }
+    $.ajax({
+        method: "POST",
+        url: loginUrl,
+        data: JSON.stringify(loginData),
+        contentType: 'application/json'
+    }).done(function (tokenData) {
+        //console.log(tokenData);
+        localStorage.setItem("JWT", tokenData);
+
+        $("#spinner-placeholder").removeClass("spinner");
+        $("#login-button").prop("disabled", false);
+
+        // redirect
+        window.location.href = "logs.html";
+    }).fail(function (err) {
+        alert(err.responseText);
+
+        localStorage.removeItem("JWT");
+        $("#spinner-placeholder").removeClass("spinner");
+        $("#login-button").prop("disabled", false);
+    });
+}
+
+===== login.css =====
+input[type=text], input[type=password] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: block;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    background-color: #04AA6D;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    display: block;
+    border: none;
+    cursor: pointer;
+}
+
+    button:hover {
+        opacity: 0.8;
+    }
+
+    button:disabled {
+        background-color: dimgrey;
+        color: linen;
+        opacity: 1;
+    }
+
+.login-container {
+    width: 50%;
+    padding: 16px;
+    border: 3px solid #f1f1f1;
+    margin: auto;
+}
