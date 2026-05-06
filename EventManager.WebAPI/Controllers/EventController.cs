@@ -1,9 +1,9 @@
 using AutoMapper;
 using EventManager.DAL.Models;
+using EventManager.DAL.Repositories;
 using EventManager.WebAPI.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EventManager.WebAPI.Controllers
 {
@@ -12,12 +12,13 @@ namespace EventManager.WebAPI.Controllers
     public class EventController : ControllerBase
     {
         private readonly IMapper _mapper;
-        // Database context, injected by DI
-        private readonly EventManagerDbContext _context;
+        private readonly IEventRepository _eventRepository;
+        private readonly ILogRepository _logRepository;
 
-        public EventController(EventManagerDbContext context, IMapper mapper)
+        public EventController(IEventRepository eventRepository, ILogRepository logRepository, IMapper mapper)
         {
-            _context = context;
+            _eventRepository = eventRepository;
+            _logRepository = logRepository;
             _mapper = mapper;
         }
 
@@ -34,8 +35,8 @@ namespace EventManager.WebAPI.Controllers
                     Message = message,
                     ErrorText = errorText
                 };
-                _context.Logs.Add(log);
-                _context.SaveChanges();
+                _logRepository.AddLog(log);
+                _logRepository.SaveChanges();
             }
             catch
             {
@@ -52,8 +53,8 @@ namespace EventManager.WebAPI.Controllers
         {
             try
             {
-                // 1. load all events from database
-                List<Event> events = _context.Events.ToList();
+                // 1. load data for this request
+                List<Event> events = _eventRepository.GetAllEvents();
 
                 // 2. map entities to DTOs
                 List<EventDto> result = _mapper.Map<List<EventDto>>(events);
@@ -76,8 +77,8 @@ namespace EventManager.WebAPI.Controllers
         {
             try
             {
-                // 1. find event by id
-                Event? eventById = _context.Events.FirstOrDefault(e => e.Id == id);
+                // 1. load data for this request
+                Event? eventById = _eventRepository.GetEventById(id);
 
                 // 2. if not found, return NotFound
                 if (eventById == null)
@@ -110,32 +111,8 @@ namespace EventManager.WebAPI.Controllers
                 if (count < 1)
                     return BadRequest("Count must be at least 1.");
 
-                // 2. start query from Events table
-                IQueryable<Event> query = _context.Events.AsQueryable();
-
-                // 3. if q has value, filter by Name or Description, case insensitive by default
-                if (!string.IsNullOrWhiteSpace(q))
-                {
-                    query = query.Where(e =>
-                        e.Name.Contains(q) ||
-                        e.Description.Contains(q));
-                }
-
-                // 4. if eventTypeId has value, filter by EventTypeId
-                if (eventTypeId.HasValue)
-                {
-                    query = query.Where(e => e.EventTypeId == eventTypeId.Value);
-                }
-
-                // 5. apply paging
-                // Skip rows from previous pages, then take only the requested page size
-                // Example: page=2 and count=10 means skip first 10 rows, then take next 10
-                query = query
-                    .Skip((page - 1) * count)
-                    .Take(count);
-
-                // 6. execute query and load matching events
-                List<Event> events = query.ToList();
+                // 2. load data for this request
+                List<Event> events = _eventRepository.SearchEvents(q, eventTypeId, page, count);
 
                 // 7. map entities to DTOs
                 List<EventDto> result = _mapper.Map<List<EventDto>>(events);
@@ -173,16 +150,15 @@ namespace EventManager.WebAPI.Controllers
                 if (string.IsNullOrEmpty(username))
                     return Unauthorized("User identity is missing.");
 
-                // 4. find logged-in user
-                User? existingUser = _context.Users.FirstOrDefault(x => x.Username == username);
+                // 4. load data for this request
+                User? existingUser = _eventRepository.GetUserByUsername(username);
 
                 // 5. if user not found, return NotFound
                 if (existingUser == null)
                     return NotFound("User not found.");
 
                 // 6. validate referenced EventType
-                EventType? existingEventType = _context.EventTypes
-                    .FirstOrDefault(x => x.Id == eventDto.EventTypeId);
+                EventType? existingEventType = _eventRepository.GetEventTypeById(eventDto.EventTypeId);
 
                 if (existingEventType == null)
                 {
@@ -193,8 +169,7 @@ namespace EventManager.WebAPI.Controllers
                 // 7. validate optional Image
                 if (eventDto.ImageId.HasValue)
                 {
-                    Image? existingImage = _context.Images
-                        .FirstOrDefault(x => x.Id == eventDto.ImageId.Value);
+                    Image? existingImage = _eventRepository.GetImageById(eventDto.ImageId.Value);
 
                     if (existingImage == null)
                     {
@@ -207,9 +182,9 @@ namespace EventManager.WebAPI.Controllers
                 Event newEvent = _mapper.Map<Event>(eventDto);
                 newEvent.CreatedById = existingUser.Id;
 
-                // 9. save to database
-                _context.Events.Add(newEvent);
-                _context.SaveChanges();
+                // 9. save changes
+                _eventRepository.AddEvent(newEvent);
+                _eventRepository.SaveChanges();
 
                 // 10. copy generated Id back to DTO
                 eventDto.Id = newEvent.Id;
@@ -241,8 +216,8 @@ namespace EventManager.WebAPI.Controllers
                 if (eventDto.EndTime <= eventDto.StartTime)
                     return BadRequest("End time must be after start time.");
 
-                // 2. find existing event by id
-                Event? existingEvent = _context.Events.FirstOrDefault(e => e.Id == id);
+                // 2. load data for this request
+                Event? existingEvent = _eventRepository.GetEventById(id);
 
                 // 3. if not found, return NotFound
                 if (existingEvent == null)
@@ -252,8 +227,7 @@ namespace EventManager.WebAPI.Controllers
                 }
 
                 // 4. validate referenced EventType and optional Image
-                EventType? existingEventType = _context.EventTypes
-                    .FirstOrDefault(x => x.Id == eventDto.EventTypeId);
+                EventType? existingEventType = _eventRepository.GetEventTypeById(eventDto.EventTypeId);
 
                 if (existingEventType == null)
                 {
@@ -263,8 +237,7 @@ namespace EventManager.WebAPI.Controllers
 
                 if (eventDto.ImageId.HasValue)
                 {
-                    Image? existingImage = _context.Images
-                        .FirstOrDefault(x => x.Id == eventDto.ImageId.Value);
+                    Image? existingImage = _eventRepository.GetImageById(eventDto.ImageId.Value);
 
                     if (existingImage == null)
                     {
@@ -277,7 +250,7 @@ namespace EventManager.WebAPI.Controllers
                 _mapper.Map(eventDto, existingEvent);
 
                 // 6. save changes
-                _context.SaveChanges();
+                _eventRepository.SaveChanges();
 
                 // 7. return updated DTO
                 eventDto.Id = existingEvent.Id;
@@ -301,8 +274,8 @@ namespace EventManager.WebAPI.Controllers
         {
             try
             {
-                // 1. find existing event by id
-                Event? existingEvent = _context.Events.FirstOrDefault(e => e.Id == id);
+                // 1. load data for this request
+                Event? existingEvent = _eventRepository.GetEventById(id);
 
                 // 2. if not found, return NotFound
                 if (existingEvent == null)
@@ -312,10 +285,10 @@ namespace EventManager.WebAPI.Controllers
                 }
 
                 // 3. remove event from database
-                _context.Events.Remove(existingEvent);
+                _eventRepository.RemoveEvent(existingEvent);
 
                 // 4. save changes
-                _context.SaveChanges();
+                _eventRepository.SaveChanges();
 
                 // 5. return success response
                 WriteLog(2, $"Event with id={id} has been deleted.");
@@ -336,18 +309,15 @@ namespace EventManager.WebAPI.Controllers
         {
             try
             {
-                // 1. find event by id
-                Event? eventById = _context.Events.FirstOrDefault(e => e.Id == id);
+                // 1. load data for this request
+                Event? eventById = _eventRepository.GetEventById(id);
 
                 // 2. if event not found, return NotFound
                 if (eventById == null)
                     return NotFound("Event not found.");
 
-                // 3. load performer relations for that event
-                List<EventPerformer> eventPerformers = _context.EventPerformers
-                    .Include(x => x.Performer)
-                    .Where(x => x.EventId == id)
-                    .ToList();
+                // 3. load data for this request
+                List<EventPerformer> eventPerformers = _eventRepository.GetEventPerformersByEventId(id);
 
                 // 4. map related performers to DTO list
                 List<PerformerDto> result = eventPerformers
@@ -384,24 +354,22 @@ namespace EventManager.WebAPI.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                // 2. find event by id
-                Event? eventById = _context.Events.FirstOrDefault(e => e.Id == id);
+                // 2. load data for this request
+                Event? eventById = _eventRepository.GetEventById(id);
 
                 // 3. if event not found, return NotFound
                 if (eventById == null)
                     return NotFound("Event not found.");
 
-                // 4. find performer by id from DTO
-                Performer? performer = _context.Performers
-                    .FirstOrDefault(p => p.Id == eventPerformerDto.PerformerId);
+                // 4. load data for this request
+                Performer? performer = _eventRepository.GetPerformerById(eventPerformerDto.PerformerId);
 
                 // 5. if performer not found, return NotFound
                 if (performer == null)
                     return NotFound($"Performer with id={eventPerformerDto.PerformerId} was not found.");
 
                 // 6. check whether relation already exists
-                bool existingRelation = _context.EventPerformers
-                    .Any(ep => ep.EventId == id && ep.PerformerId == eventPerformerDto.PerformerId);
+                bool existingRelation = _eventRepository.EventPerformerRelationExists(id, eventPerformerDto.PerformerId);
 
                 // 7. if relation already exists, return BadRequest
                 if (existingRelation)
@@ -414,10 +382,10 @@ namespace EventManager.WebAPI.Controllers
                     PerformerId = eventPerformerDto.PerformerId
                 };
 
-                _context.EventPerformers.Add(patchedPerformer);
+                _eventRepository.AddEventPerformer(patchedPerformer);
 
-                // 9. save to database
-                _context.SaveChanges();
+                // 9. save changes
+                _eventRepository.SaveChanges();
 
                 // 10. return success response
                 return Ok($"Performer id={patchedPerformer.PerformerId} was added to Event id={eventById.Id}.");
@@ -440,34 +408,32 @@ namespace EventManager.WebAPI.Controllers
         {
             try
             {
-                // 1. find event by id
-                Event? eventById = _context.Events.FirstOrDefault(e => e.Id == id);
+                // 1. load data for this request
+                Event? eventById = _eventRepository.GetEventById(id);
 
                 // 2. if event not found, return NotFound
                 if (eventById == null)
                     return NotFound("Event not found.");
 
-                // 3. find performer by id
-                Performer? performer = _context.Performers
-                    .FirstOrDefault(p => p.Id == performerId);
+                // 3. load data for this request
+                Performer? performer = _eventRepository.GetPerformerById(performerId);
 
                 // 4. if performer not found, return NotFound
                 if (performer == null)
                     return NotFound($"Performer with id={performerId} was not found.");
 
-                // 5. find relation row in EventPerformer
-                EventPerformer? existingRelation = _context.EventPerformers
-                    .FirstOrDefault(ep => ep.EventId == id && ep.PerformerId == performerId);
+                // 5. load data for this request
+                EventPerformer? existingRelation = _eventRepository.GetEventPerformerRelation(id, performerId);
 
                 // 6. if relation not found, return NotFound
                 if (existingRelation == null)
                     return NotFound($"Performer id={performerId} is not assigned to event id={id}.");
 
-                // 7. remove relation from database
-                _context.EventPerformers.Remove(existingRelation);
+                // 7. remove relation
+                _eventRepository.RemoveEventPerformer(existingRelation);
 
                 // 8. save changes
-                _context.SaveChanges();
+                _eventRepository.SaveChanges();
 
                 // 9. return success response
                 return Ok($"Performer id={performerId} was deleted from Event id={eventById.Id}.");

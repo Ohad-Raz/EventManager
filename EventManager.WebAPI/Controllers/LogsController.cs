@@ -1,4 +1,5 @@
 using EventManager.DAL.Models;
+using EventManager.DAL.Repositories;
 using EventManager.WebAPI.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,12 +11,11 @@ namespace EventManager.WebAPI.Controllers
     [Authorize(Roles = "Admin")]
     public class LogsController : ControllerBase
     {
-        // Database context, injected by DI
-        private readonly EventManagerDbContext _context;
+        private readonly ILogRepository _logRepository;
 
-        public LogsController(EventManagerDbContext context)
+        public LogsController(ILogRepository logRepository)
         {
-            _context = context;
+            _logRepository = logRepository;
         }
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace EventManager.WebAPI.Controllers
             try
             {
                 // 1. count all logs
-                int result = _context.Logs.Count();
+                int result = _logRepository.CountLogs();
 
                 // 2. return count
                 return Ok(result);
@@ -53,10 +53,7 @@ namespace EventManager.WebAPI.Controllers
                     return BadRequest("N must be at least 1.");
 
                 // 2. load last n logs ordered by newest first
-                List<Log> logs = _context.Logs
-                    .OrderByDescending(x => x.Timestamp)
-                    .Take(n)
-                    .ToList();
+                List<Log> logs = _logRepository.GetLatestLogs(n);
 
                 // 3. map entities to DTOs
                 List<LogDto> result = logs

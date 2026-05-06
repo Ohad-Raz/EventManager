@@ -6,3 +6,4 @@ EventManager.WebAPI/*.suo
 EventManager.WebAPI/TestResults/
 EventManager.WebAPI/appsettings.json
 EventManager.WebAPI/appsettings.Development.json
+docs/

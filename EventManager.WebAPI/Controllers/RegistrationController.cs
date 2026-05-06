@@ -1,9 +1,9 @@
 using AutoMapper;
 using EventManager.DAL.Models;
+using EventManager.DAL.Repositories;
 using EventManager.WebAPI.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EventManager.WebAPI.Controllers
 {
@@ -12,12 +12,11 @@ namespace EventManager.WebAPI.Controllers
     public class RegistrationController : ControllerBase
     {
         private readonly IMapper _mapper;
-        // Database context, injected by DI
-        private readonly EventManagerDbContext _context;
+        private readonly IRegistrationRepository _registrationRepository;
 
-        public RegistrationController(EventManagerDbContext context, IMapper mapper)
+        public RegistrationController(IRegistrationRepository registrationRepository, IMapper mapper)
         {
-            _context = context;
+            _registrationRepository = registrationRepository;
             _mapper = mapper;
         }
 
@@ -43,24 +42,21 @@ namespace EventManager.WebAPI.Controllers
                     return Unauthorized("User identity is missing.");
 
                 // 3. find logged-in user
-                User? existingUser = _context.Users
-                    .FirstOrDefault(x => x.Username == username);
+                User? existingUser = _registrationRepository.GetUserByUsername(username);
 
                 // 4. if user not found, return NotFound
                 if (existingUser == null)
                     return NotFound("User not found.");
 
                 // 5. find target event
-                Event? existingEvent = _context.Events
-                    .FirstOrDefault(e => e.Id == registrationDto.EventId);
+                Event? existingEvent = _registrationRepository.GetEventById(registrationDto.EventId);
 
                 // 6. if event not found, return NotFound
                 if (existingEvent == null)
                     return NotFound("Event not found.");
 
                 // 7. check duplicate registration for same user and event
-                Registration? existingRegistration = _context.Registrations
-                    .FirstOrDefault(r => r.UserId == existingUser.Id && r.EventId == existingEvent.Id);
+                Registration? existingRegistration = _registrationRepository.GetRegistrationByUserAndEvent(existingUser.Id, existingEvent.Id);
 
                 // 8. if already registered, stop
                 if (existingRegistration != null)
@@ -76,8 +72,8 @@ namespace EventManager.WebAPI.Controllers
                 };
 
                 // 10. save to database
-                _context.Registrations.Add(registration);
-                _context.SaveChanges();
+                _registrationRepository.AddRegistration(registration);
+                _registrationRepository.SaveChanges();
 
                 // 11. return generated Id to client
                 registrationDto.Id = registration.Id;
@@ -102,10 +98,7 @@ namespace EventManager.WebAPI.Controllers
             try
             {
                 // 1. load registrations with related user and event
-                List<Registration> registrations = _context.Registrations
-                    .Include(x => x.User)
-                    .Include(x => x.Event)
-                    .ToList();
+                List<Registration> registrations = _registrationRepository.GetAllRegistrationsWithDetails();
 
                 // 2. map entities to DTOs
                 List<RegistrationDetailsDto> result = _mapper.Map<List<RegistrationDetailsDto>>(registrations);
@@ -131,10 +124,7 @@ namespace EventManager.WebAPI.Controllers
             try
             {
                 // 1. load registration with related user and event
-                Registration? registration = _context.Registrations
-                    .Include(x => x.User)
-                    .Include(x => x.Event)
-                    .FirstOrDefault(x => x.Id == id);
+                Registration? registration = _registrationRepository.GetRegistrationByIdWithDetails(id);
 
                 // 2. if not found, return NotFound
                 if (registration == null)
@@ -171,11 +161,7 @@ namespace EventManager.WebAPI.Controllers
                     return Unauthorized("User identity is missing.");
 
                 // 3. load this user's registrations with related data
-                List<Registration> registrations = _context.Registrations
-                    .Include(x => x.User)
-                    .Include(x => x.Event)
-                    .Where(x => x.User.Username == username)
-                    .ToList();
+                List<Registration> registrations = _registrationRepository.GetRegistrationsByUsernameWithDetails(username);
 
                 // 4. map entities to DTOs
                 List<RegistrationDetailsDto> result = _mapper.Map<List<RegistrationDetailsDto>>(registrations);

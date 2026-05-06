@@ -1,9 +1,9 @@
 using EventManager.DAL.Models;
+using EventManager.DAL.Repositories;
 using EventManager.WebAPI.Dtos;
 using EventManager.WebAPI.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EventManager.WebAPI.Controllers
 {
@@ -14,13 +14,12 @@ namespace EventManager.WebAPI.Controllers
         // Access to appsettings.json, needed for JWT secure key
         private readonly IConfiguration _configuration;
 
-        // Database context, injected by DI
-        private readonly EventManagerDbContext _context;
+        private readonly IUserRepository _userRepository;
 
-        public UserController(IConfiguration configuration, EventManagerDbContext context)
+        public UserController(IConfiguration configuration, IUserRepository userRepository)
         {
             _configuration = configuration;
-            _context = context;
+            _userRepository = userRepository;
         }
 
         /// <summary>
@@ -41,11 +40,11 @@ namespace EventManager.WebAPI.Controllers
                 string trimmedUsername = userDto.Username.Trim();
 
                 // Prevent duplicate usernames
-                if (_context.Users.Any(x => x.Username == trimmedUsername))
+                if (_userRepository.UsernameExists(trimmedUsername))
                     return BadRequest($"Username {trimmedUsername} already exists");
 
                 // Prevent duplicate e-mails
-                if (_context.Users.Any(x => x.Email == userDto.Email))
+                if (_userRepository.EmailExists(userDto.Email))
                     return BadRequest($"Email {userDto.Email} already exists");
 
                 // Create salt and hash for the entered password
@@ -66,8 +65,8 @@ namespace EventManager.WebAPI.Controllers
                 };
 
                 // Save new user to database
-                _context.Users.Add(user);
-                _context.SaveChanges();
+                _userRepository.AddUser(user);
+                _userRepository.SaveChanges();
 
                 // Return generated Id to the client
                 userDto.Id = user.Id;
@@ -100,9 +99,7 @@ namespace EventManager.WebAPI.Controllers
 
                 // Find the user by username and also load Role,
                 // because we want to store role name inside JWT
-                User? existingUser = _context.Users
-                    .Include(x => x.Role)
-                    .FirstOrDefault(x => x.Username == userDto.Username);
+                User? existingUser = _userRepository.GetUserWithRoleByUsername(userDto.Username);
 
                 // User not found
                 if (existingUser == null)
@@ -155,8 +152,7 @@ namespace EventManager.WebAPI.Controllers
                 string? username = HttpContext.User.Identity?.Name;
 
                 // Find logged-in user
-                User? existingUser = _context.Users
-                    .FirstOrDefault(x => x.Username == username);
+                User? existingUser = _userRepository.GetUserByUsername(username);
 
                 if (existingUser == null)
                     return BadRequest(genericLoginFail);
@@ -181,7 +177,7 @@ namespace EventManager.WebAPI.Controllers
                 existingUser.PwdSalt = newSalt;
                 existingUser.PwdHash = newHash;
 
-                _context.SaveChanges();
+                _userRepository.SaveChanges();
 
                 return Ok("Password changed successfully");
             }
@@ -201,8 +197,7 @@ namespace EventManager.WebAPI.Controllers
                     return BadRequest(ModelState);
 
                 // 1. find target user
-                User? existingUser = _context.Users
-              .FirstOrDefault(x => x.Id == promoteUDto.UserId);
+                User? existingUser = _userRepository.GetUserById(promoteUDto.UserId);
                 // 2. if not found, return NotFound
                 // User not found
                 if (existingUser == null)
@@ -213,7 +208,7 @@ namespace EventManager.WebAPI.Controllers
                 // 4. set RoleId = 1
                 existingUser.RoleId = 1;//ref tracking 
                 // 5. save changes
-                _context.SaveChanges();
+                _userRepository.SaveChanges();
                 return Ok("User promoted successfully.");
             }
             catch (Exception ex)

@@ -1,5 +1,6 @@
 using AutoMapper;
 using EventManager.DAL.Models;
+using EventManager.DAL.Repositories;
 using EventManager.WebAPI.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +13,11 @@ namespace EventManager.WebAPI.Controllers
     public class PerformerController : ControllerBase
     {
         private readonly IMapper _mapper;
-        // Database context, injected by DI
-        private readonly EventManagerDbContext _context;
+        private readonly IPerformerRepository _performerRepository;
 
-        public PerformerController(EventManagerDbContext context, IMapper mapper)
+        public PerformerController(IPerformerRepository performerRepository, IMapper mapper)
         {
-            _context = context;
+            _performerRepository = performerRepository;
             _mapper = mapper;
         }
 
@@ -31,7 +31,7 @@ namespace EventManager.WebAPI.Controllers
             try
             {
                 // 1. load all performers from database
-                List<Performer> performers = _context.Performers.ToList();
+                List<Performer> performers = _performerRepository.GetAllPerformers();
                 // 2. map entities to DTOs
                 List<PerformerDto> result = _mapper.Map<List<PerformerDto>>(performers);
                 // 3. return DTO list
@@ -53,7 +53,7 @@ namespace EventManager.WebAPI.Controllers
             try
             {
                 // 1. find performer by id
-                Performer? performer = _context.Performers.FirstOrDefault(p => p.Id == id);
+                Performer? performer = _performerRepository.GetPerformerById(id);
 
                 // 2. if not found, return NotFound
                 if (performer == null) return NotFound($"Performer with id={id} was not found.");
@@ -85,8 +85,8 @@ namespace EventManager.WebAPI.Controllers
                 // 2. create new performer entity
                 Performer newPerformer = _mapper.Map<Performer>(performerDto);
                 // 3. save to database
-                _context.Performers.Add(newPerformer);
-                _context.SaveChanges();
+                _performerRepository.AddPerformer(newPerformer);
+                _performerRepository.SaveChanges();
                 // 4. copy generated Id back to DTO
                 performerDto.Id = newPerformer.Id;
                 // 5. return created DTO
@@ -113,13 +113,13 @@ namespace EventManager.WebAPI.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 // 2. find existing performer by id
-                Performer? performer = _context.Performers.FirstOrDefault(p => p.Id == id);
+                Performer? performer = _performerRepository.GetPerformerById(id);
                 // 3. if not found, return NotFound
                 if (performer == null) return NotFound($"Performer with id={id} was not found.");
                 // 4. update editable fields
                 _mapper.Map(performerDto, performer);
                 // 5. save changes
-                _context.SaveChanges();
+                _performerRepository.SaveChanges();
                 // 6. copy id back to DTO if needed
                 performerDto.Id = performer.Id;
                 // 7. return updated DTO
@@ -143,13 +143,13 @@ namespace EventManager.WebAPI.Controllers
             try
             {
                 // 1. find existing performer by id
-                Performer? performer = _context.Performers.FirstOrDefault(p => p.Id == id);
+                Performer? performer = _performerRepository.GetPerformerById(id);
                 // 2. if not found, return NotFound
                 if (performer == null) return NotFound($"Performer with id={id} was not found.");
                 // 3. remove performer from database
-                _context.Performers.Remove(performer);
+                _performerRepository.RemovePerformer(performer);
                 // 4. save changes
-                _context.SaveChanges();
+                _performerRepository.SaveChanges();
                 // 5. return success response
                 return Ok($"Performer with id={id} has been deleted.");
             }
