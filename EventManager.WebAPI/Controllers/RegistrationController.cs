@@ -1,6 +1,6 @@
 using AutoMapper;
+using EventManager.DAL.Models;
 using EventManager.WebAPI.Dtos;
-using EventManager.WebAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

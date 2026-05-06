@@ -1,6 +1,6 @@
 using AutoMapper;
+using EventManager.DAL.Models;
 using EventManager.WebAPI.Dtos;
-using EventManager.WebAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -193,7 +193,7 @@ namespace EventManager.WebAPI.Controllers
                 // 7. validate optional Image
                 if (eventDto.ImageId.HasValue)
                 {
-                    Models.Image? existingImage = _context.Images
+                    Image? existingImage = _context.Images
                         .FirstOrDefault(x => x.Id == eventDto.ImageId.Value);
 
                     if (existingImage == null)
@@ -263,7 +263,7 @@ namespace EventManager.WebAPI.Controllers
 
                 if (eventDto.ImageId.HasValue)
                 {
-                    Models.Image? existingImage = _context.Images
+                    Image? existingImage = _context.Images
                         .FirstOrDefault(x => x.Id == eventDto.ImageId.Value);
 
                     if (existingImage == null)

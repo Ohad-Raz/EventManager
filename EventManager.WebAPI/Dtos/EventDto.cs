@@ -1,4 +1,3 @@
-﻿using EventManager.WebAPI.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventManager.WebAPI.Dtos

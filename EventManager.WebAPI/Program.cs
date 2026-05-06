@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using EventManager.WebAPI.Models;
+using EventManager.DAL.Models;
 using EventManager.WebAPI.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);

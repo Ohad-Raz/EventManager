@@ -1,5 +1,5 @@
-﻿using EventManager.WebAPI.Dtos;
-using EventManager.WebAPI.Models;
+using EventManager.DAL.Models;
+using EventManager.WebAPI.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

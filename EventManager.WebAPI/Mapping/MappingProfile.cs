@@ -1,6 +1,6 @@
 using AutoMapper;
+using EventManager.DAL.Models;
 using EventManager.WebAPI.Dtos;
-using EventManager.WebAPI.Models;
 
 namespace EventManager.WebAPI.Mapping
 {
