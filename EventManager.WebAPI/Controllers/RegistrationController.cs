@@ -118,8 +118,9 @@ namespace EventManager.WebAPI.Controllers
         /// Only Admins are allowed to access this endpoint.
         /// </summary>
         [Authorize(Roles = "Admin")]
-        [HttpGet("{id}")]
-        public ActionResult<RegistrationDetailsDto> Get(int id)
+        //Only match this action if the URL value is an integer.
+        [HttpGet("{id:int}")]
+        public ActionResult<RegistrationDetailsDto> Get([FromRoute] int id)
         {
             try
             {

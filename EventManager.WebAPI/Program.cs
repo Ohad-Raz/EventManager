@@ -56,7 +56,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<EventManagerDbContext>(options => {
     options.UseSqlServer("name=ConnectionStrings:DefaultConn");
 });
-var secureKey = builder.Configuration["JWT:SecureKey"];
+var secureKey = builder.Configuration["JWT:SecureKey"]//solving null possibility 
+    ?? throw new InvalidOperationException("JWT secure key is missing.");
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
