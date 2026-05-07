@@ -2,7 +2,8 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Logs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EventManager Logs</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <link rel="stylesheet" href="spinner.css" />
     <link rel="stylesheet" href="logs.css" />
@@ -17,6 +18,12 @@
     </nav>
 
     <div class="container mt-3">
+        <div class="row m-3">
+            <div class="col">
+                <div id="total-count" class="total-count">Total logs: -</div>
+            </div>
+        </div>
+
         <div class="row m-3 align-items-center">
             <div class="col-auto">
                 <label for="log-count" class="col-form-label">Show logs:</label>
@@ -37,7 +44,9 @@
         </div>
 
         <div class="row">
-            <div class="col" id="placeholder"></div>
+            <div class="col">
+                <div id="placeholder"></div>
+            </div>
         </div>
     </div>
 

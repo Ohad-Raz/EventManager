@@ -1,6 +1,7 @@
 body {
     font-family: Arial, Tahoma, Serif;
     color: #263238;
+    background-color: #f7f9fb;
 }
 
 nav {
@@ -27,3 +28,12 @@ nav {
         nav a:hover {
             opacity: 0.5;
         }
+
+.total-count {
+    font-weight: 600;
+    color: #1b5e20;
+}
+
+#placeholder .alert {
+    margin-top: 1rem;
+}

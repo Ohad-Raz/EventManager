@@ -1,29 +1,84 @@
 const logsGetByCountUrl = "/api/logs/get";
 const logsCountUrl = "/api/logs/count";
-// TODO: replace endpoint if my backend route differs
 
-function jwtLogout() {
-    // 1. remove JWT from localStorage
-    // 2. redirect user to login page
+function redirectToLoginAndClearToken() {
+    // 1. clear JWT and go back to login
     localStorage.removeItem("JWT");
     window.location.href = "login.html";
 }
 
+function jwtLogout() {
+    // 1. logout from local storage token
+    redirectToLoginAndClearToken();
+}
+
 function renderLogsTable(logs) {
-    // 1. clear current placeholder content
-    // 2. verify logs is an array
-    // 3. if empty, render "No logs found"
-    // 4. build a simple Bootstrap table (ID, Timestamp, Level, Message)
-    // 5. append rows using available DTO fields
-    // TODO: adjust rendering once final Log DTO shape is confirmed
-    // TODO: keep defensive mapping if field names differ (timestamp/timeStamp, etc.)
+    // 1. ensure array value
+    const items = Array.isArray(logs) ? logs : [];
+
+    // 2. show empty state if there are no logs
+    if (items.length === 0) {
+        $("#placeholder").html('<div class="alert alert-info">No logs found.</div>');
+        return;
+    }
+
+    // 3. build table rows
+    let rowsHtml = "";
+    for (const log of items) {
+        rowsHtml += `
+            <tr>
+                <td>${log.id ?? ""}</td>
+                <td>${log.timestamp ?? ""}</td>
+                <td>${log.level ?? ""}</td>
+                <td>${log.message ?? ""}</td>
+                <td>${log.errorText ?? ""}</td>
+            </tr>`;
+    }
+
+    // 4. render a clean Bootstrap table
+    const tableHtml = `
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Timestamp</th>
+                        <th>Level</th>
+                        <th>Message</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        </div>`;
+
+    $("#placeholder").html(tableHtml);
+}
+
+function loadLogCount(jwt) {
+    // 1. call count endpoint to display total logs
+    return $.ajax({
+        method: "GET",
+        url: logsCountUrl,
+        headers: {
+            Authorization: `Bearer ${jwt}`
+        }
+    }).done(function (countValue) {
+        $("#total-count").text(`Total logs: ${countValue}`);
+    }).fail(function (err) {
+        if (err.status === 401 || err.status === 403) {
+            redirectToLoginAndClearToken();
+            return;
+        }
+        $("#total-count").text("Total logs: unavailable");
+    });
 }
 
 function loadLogs() {
     // 1. check JWT in localStorage and redirect to login if missing
     const jwt = localStorage.getItem("JWT");
     if (!jwt) {
-        window.location.href = "login.html";
+        redirectToLoginAndClearToken();
         return;
     }
 
@@ -37,24 +92,41 @@ function loadLogs() {
     $("#refresh-spinner-placeholder").addClass("spinner");
     $("#refresh-button").prop("disabled", true);
 
-    console.log(requestUrl);
-    // 5. call logs endpoint using AJAX + Authorization: Bearer <JWT>
-    // 6. on success: call renderLogsTable(logs)
-    // 7. handle unauthorized response (401/403) - clear JWT and redirect
-    // 8. handle other errors and show message in placeholder
-    // 9. hide spinner and re-enable refresh button
-    // TODO: verify exact logs endpoint in your backend
-    // TODO: optional use of /api/logs/count for total logs display
+    // 5. update total count (best effort)
+    loadLogCount(jwt);
+
+    // 6. call logs endpoint with JWT
+    $.ajax({
+        method: "GET",
+        url: requestUrl,
+        headers: {
+            Authorization: `Bearer ${jwt}`
+        }
+    }).done(function (logs) {
+        // 7. render logs table
+        renderLogsTable(logs);
+    }).fail(function (err) {
+        // 8. redirect on unauthorized, otherwise show friendly error
+        if (err.status === 401 || err.status === 403) {
+            redirectToLoginAndClearToken();
+            return;
+        }
+        $("#placeholder").html('<div class="alert alert-danger">Failed to load logs. Please try again.</div>');
+    }).always(function () {
+        // 9. restore refresh button state
+        $("#refresh-spinner-placeholder").removeClass("spinner");
+        $("#refresh-button").prop("disabled", false);
+    });
 }
 
 $(function () {
     // 1. check JWT in localStorage and redirect to login if missing
     const jwt = localStorage.getItem("JWT");
     if (!jwt) {
-        window.location.href = "login.html";
+        redirectToLoginAndClearToken();
         return;
     }
-    // 2. attach click handler for refresh button if needed
-    // 3. call loadLogs() for initial page load
-    loadLogs(); // You can keep or replace this call during your implementation
+
+    // 2. load logs immediately on page open
+    loadLogs();
 });

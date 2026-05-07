@@ -23,6 +23,7 @@ namespace EventManager.WebAPI.Controllers
         /// Endpoint: GET /api/Logs/count
         /// </summary>
         [HttpGet("count")]
+        [Authorize(Roles = "Admin")]
         public ActionResult<int> Count()
         {
             try
@@ -44,6 +45,7 @@ namespace EventManager.WebAPI.Controllers
         /// Endpoint: GET /api/Logs/get/{n}
         /// </summary>
         [HttpGet("get/{n}")]
+        [Authorize(Roles = "Admin")]
         public ActionResult<ICollection<LogDto>> Get(int n)
         {
             try

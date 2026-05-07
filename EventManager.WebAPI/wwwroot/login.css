@@ -1,4 +1,11 @@
-﻿input[type=text], input[type=password] {
+body {
+    font-family: Arial, Tahoma, Serif;
+    background-color: #f7f9fb;
+    margin: 0;
+    padding: 2rem 1rem;
+}
+
+input[type=text], input[type=password] {
     width: 100%;
     padding: 12px 20px;
     margin: 8px 0;
@@ -29,8 +36,25 @@ button {
     }
 
 .login-container {
-    width: 50%;
+    width: 100%;
+    max-width: 500px;
     padding: 16px;
     border: 3px solid #f1f1f1;
     margin: auto;
+    background-color: #fff;
+    border-radius: 8px;
+}
+
+.error-message {
+    background-color: #ffebee;
+    color: #b71c1c;
+    border: 1px solid #ef9a9a;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 0 0 10px;
+}
+
+.hint {
+    color: #455a64;
+    font-size: 0.95rem;
 }
