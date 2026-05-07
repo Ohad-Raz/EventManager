@@ -15,22 +15,22 @@ namespace EventManager.DAL.Repositories
         // Returns one event by id.
         public Event? GetEventById(int id)
         {
-            // 1. find event by id
-            return _context.Events.FirstOrDefault(e => e.Id == id);
+            // 1. find event by id only if not soft-deleted
+            return _context.Events.FirstOrDefault(e => e.Id == id && e.DeletedAt == null);
         }
 
         // Returns all events.
         public List<Event> GetAllEvents()
         {
-            // 1. load all events from database
-            return _context.Events.ToList();
+            // 1. load all non-deleted events from database
+            return _context.Events.Where(e => e.DeletedAt == null).ToList();
         }
 
         // Returns paged events filtered by optional query and event type.
         public List<Event> SearchEvents(string? q, int? eventTypeId, int page, int count)
         {
-            // 1. start query from Events table
-            IQueryable<Event> query = _context.Events.AsQueryable();
+            // 1. start query from non-deleted Events
+            IQueryable<Event> query = _context.Events.Where(e => e.DeletedAt == null);
 
             // 2. if q has value, filter by Name or Description
             if (!string.IsNullOrWhiteSpace(q))
@@ -83,11 +83,22 @@ namespace EventManager.DAL.Repositories
             _context.Events.Add(newEvent);
         }
 
-        // Removes an event row.
+        // Soft-deletes an event and deactivates its active registrations.
         public void RemoveEvent(Event existingEvent)
         {
-            // 1. remove Event row
-            _context.Events.Remove(existingEvent);
+            // 1. perform soft delete by setting DeletedAt
+            existingEvent.DeletedAt = DateTime.UtcNow;
+
+            // 2. load all active registrations for this event
+            List<Registration> activeRegistrations = _context.Registrations
+                .Where(r => r.EventId == existingEvent.Id && r.IsActive)
+                .ToList();
+
+            // 3. mark related registrations as inactive
+            foreach (Registration registration in activeRegistrations)
+            {
+                registration.IsActive = false;
+            }
         }
 
         // Saves pending database changes.

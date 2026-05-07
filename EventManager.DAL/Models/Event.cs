@@ -27,6 +27,8 @@ public partial class Event
 
     public DateTime CreatedAt { get; set; }
 
+    public DateTime? DeletedAt { get; set; }
+
     public virtual User CreatedBy { get; set; } = null!;
 
     public virtual ICollection<EventPerformer> EventPerformers { get; set; } = new List<EventPerformer>();

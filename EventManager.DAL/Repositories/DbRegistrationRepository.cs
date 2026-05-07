@@ -22,14 +22,14 @@ namespace EventManager.DAL.Repositories
         // Returns one event by id.
         public Event? GetEventById(int id)
         {
-            // 1. find target event
-            return _context.Events.FirstOrDefault(e => e.Id == id);
+            // 1. find target event only if not soft-deleted
+            return _context.Events.FirstOrDefault(e => e.Id == id && e.DeletedAt == null);
         }
 
-        // Returns one registration for same user and event.
+        // Returns existing registration for the same user and event, active or inactive.
         public Registration? GetRegistrationByUserAndEvent(int userId, int eventId)
         {
-            // 1. check duplicate registration for same user and event
+            // 1. find existing registration relation for same user and event
             return _context.Registrations
                 .FirstOrDefault(r => r.UserId == userId && r.EventId == eventId);
         }
@@ -61,14 +61,17 @@ namespace EventManager.DAL.Repositories
                 .FirstOrDefault(x => x.Id == id);
         }
 
-        // Returns registrations for one username with user and event data.
+        // Returns active registrations for one username with user and event data.
         public List<Registration> GetRegistrationsByUsernameWithDetails(string username)
         {
-            // 1. load this user's registrations with related data
+            // 1. load this user's active registrations with related data
             return _context.Registrations
                 .Include(x => x.User)
                 .Include(x => x.Event)
-                .Where(x => x.User.Username == username)
+                .Where(x =>
+                    x.User.Username == username &&
+                    x.IsActive &&
+                    x.Event.DeletedAt == null)
                 .ToList();
         }
 

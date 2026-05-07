@@ -55,14 +55,27 @@ namespace EventManager.WebAPI.Controllers
                 if (existingEvent == null)
                     return NotFound("Event not found.");
 
-                // 7. check duplicate registration for same user and event
-                Registration? existingRegistration = _registrationRepository.GetRegistrationByUserAndEvent(existingUser.Id, existingEvent.Id);
+                // 7. check existing registration for same user and event
+                Registration? existingRegistration =
+                    _registrationRepository.GetRegistrationByUserAndEvent(existingUser.Id, existingEvent.Id);
 
-                // 8. if already registered, stop
-                if (existingRegistration != null)
+                // 8. if active registration already exists, stop
+                if (existingRegistration != null && existingRegistration.IsActive)
                     return BadRequest("User is already registered to the event.");
 
-                // 9. create new registration entity
+                // 9. if cancelled registration exists, reactivate it
+                if (existingRegistration != null && !existingRegistration.IsActive)
+                {
+                    existingRegistration.IsActive = true;
+                    existingRegistration.Name = registrationDto.Name;
+
+                    _registrationRepository.SaveChanges();
+
+                    registrationDto.Id = existingRegistration.Id;
+
+                    return Ok(registrationDto);
+                }
+                // 10. create new registration entity
                 Registration registration = new Registration
                 {
                     Name = registrationDto.Name,
@@ -70,12 +83,11 @@ namespace EventManager.WebAPI.Controllers
                     EventId = existingEvent.Id,
                     IsActive = true
                 };
-
-                // 10. save to database
+                // 11. save to database
                 _registrationRepository.AddRegistration(registration);
                 _registrationRepository.SaveChanges();
 
-                // 11. return generated Id to client
+                // 12. return generated Id to client
                 registrationDto.Id = registration.Id;
 
                 return Ok(registrationDto);
