@@ -19,11 +19,34 @@ namespace EventManager.DAL.Repositories
             return _context.Events.FirstOrDefault(e => e.Id == id && e.DeletedAt == null);
         }
 
+        // Returns one event by id with related entities.
+        public Event? GetEventByIdWithDetails(int id)
+        {
+            // 1. find event by id with CreatedBy, EventType and Image
+            return _context.Events
+                .Include(e => e.CreatedBy)
+                .Include(e => e.EventType)
+                .Include(e => e.Image)
+                .FirstOrDefault(e => e.Id == id && e.DeletedAt == null);
+        }
+
         // Returns all events.
         public List<Event> GetAllEvents()
         {
             // 1. load all non-deleted events from database
             return _context.Events.Where(e => e.DeletedAt == null).ToList();
+        }
+
+        // Returns all events with related entities.
+        public List<Event> GetAllEventsWithDetails()
+        {
+            // 1. load all non-deleted events with CreatedBy, EventType and Image
+            return _context.Events
+                .Include(e => e.CreatedBy)
+                .Include(e => e.EventType)
+                .Include(e => e.Image)
+                .Where(e => e.DeletedAt == null)
+                .ToList();
         }
 
         // Returns paged events filtered by optional query and event type.
@@ -55,6 +78,13 @@ namespace EventManager.DAL.Repositories
             return query.ToList();
         }
 
+        // Checks whether event exists and is not soft-deleted.
+        public bool EventExists(int id)
+        {
+            // 1. check event existence by id for active events
+            return _context.Events.Any(e => e.Id == id && e.DeletedAt == null);
+        }
+
         // Returns one user by username.
         public User? GetUserByUsername(string username)
         {
@@ -76,11 +106,39 @@ namespace EventManager.DAL.Repositories
             return _context.Images.FirstOrDefault(x => x.Id == id);
         }
 
+        // Returns all users for dropdowns.
+        public List<User> GetAllUsers()
+        {
+            // 1. load all users from database
+            return _context.Users.ToList();
+        }
+
+        // Returns all event types for dropdowns.
+        public List<EventType> GetAllEventTypes()
+        {
+            // 1. load all event types from database
+            return _context.EventTypes.ToList();
+        }
+
+        // Returns all images for dropdowns.
+        public List<Image> GetAllImages()
+        {
+            // 1. load all images from database
+            return _context.Images.ToList();
+        }
+
         // Adds a new event row.
         public void AddEvent(Event newEvent)
         {
             // 1. add Event row
             _context.Events.Add(newEvent);
+        }
+
+        // Marks an event row as modified.
+        public void UpdateEvent(Event existingEvent)
+        {
+            // 1. update Event row
+            _context.Events.Update(existingEvent);
         }
 
         // Soft-deletes an event and deactivates its active registrations.
