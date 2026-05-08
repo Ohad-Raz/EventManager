@@ -1,3 +1,4 @@
+using AutoMapper;
 using EventManager.DAL.Models;
 using EventManager.DAL.Repositories;
 using EventManager.WebApp.ViewModels;
@@ -10,10 +11,12 @@ namespace EventManager.WebApp.Controllers
     public class EventController : Controller
     {
         private readonly IEventRepository _eventRepository;
+        private readonly IMapper _mapper;
 
-        public EventController(IEventRepository eventRepository)
+        public EventController(IEventRepository eventRepository, IMapper mapper)
         {
             _eventRepository = eventRepository;
+            _mapper = mapper;
         }
 
         // GET: Event
@@ -23,7 +26,7 @@ namespace EventManager.WebApp.Controllers
             List<Event> events = _eventRepository.GetAllEventsWithDetails();
 
             // 2. map entities to display view models
-            List<EventVM> model = events.Select(MapToEventVM).ToList();
+            List<EventVM> model = _mapper.Map<List<EventVM>>(events);
 
             // 3. return list view
             return View(model);
@@ -46,7 +49,7 @@ namespace EventManager.WebApp.Controllers
             }
 
             // 3. map entity to display model and return view
-            EventVM model = MapToEventVM(existingEvent);
+            EventVM model = _mapper.Map<EventVM>(existingEvent);
             return View(model);
         }
 
@@ -82,7 +85,8 @@ namespace EventManager.WebApp.Controllers
             }
 
             // 3. map form model to Event entity
-            Event newEvent = MapToCreateEntity(model, fallbackCreatedById.Value);
+            Event newEvent = _mapper.Map<Event>(model);
+            newEvent.CreatedById = fallbackCreatedById.Value;
 
             // 4. save new event
             _eventRepository.AddEvent(newEvent);
@@ -108,18 +112,7 @@ namespace EventManager.WebApp.Controllers
             }
 
             // 3. map entity to edit model
-            EventEditVM model = new EventEditVM
-            {
-                Id = existingEvent.Id,
-                Name = existingEvent.Name,
-                Description = existingEvent.Description,
-                StartTime = existingEvent.StartTime,
-                EndTime = existingEvent.EndTime,
-                Location = existingEvent.Location,
-                Capacity = existingEvent.Capacity,
-                EventTypeId = existingEvent.EventTypeId,
-                ImageId = existingEvent.ImageId
-            };
+            EventEditVM model = _mapper.Map<EventEditVM>(existingEvent);
 
             // 4. load dropdown values for edit form
             LoadEventDropdowns(existingEvent.CreatedById, model.EventTypeId, model.ImageId);
@@ -154,7 +147,7 @@ namespace EventManager.WebApp.Controllers
             try
             {
                 // 4. apply edited values and persist
-                ApplyEditToEntity(model, existingEvent);
+                _mapper.Map(model, existingEvent);
                 _eventRepository.UpdateEvent(existingEvent);
                 _eventRepository.SaveChanges();
             }
@@ -187,7 +180,7 @@ namespace EventManager.WebApp.Controllers
             }
 
             // 3. map entity to delete confirmation model
-            EventVM model = MapToEventVM(existingEvent);
+            EventVM model = _mapper.Map<EventVM>(existingEvent);
             return View(model);
         }
 
@@ -206,57 +199,6 @@ namespace EventManager.WebApp.Controllers
             }
 
             return RedirectToAction(nameof(Index));
-        }
-
-        // Maps Event entity to EventVM used by display pages.
-        private static EventVM MapToEventVM(Event existingEvent)
-        {
-            return new EventVM
-            {
-                Id = existingEvent.Id,
-                Name = existingEvent.Name,
-                Description = existingEvent.Description,
-                StartTime = existingEvent.StartTime,
-                EndTime = existingEvent.EndTime,
-                Location = existingEvent.Location,
-                Capacity = existingEvent.Capacity,
-                EventTypeId = existingEvent.EventTypeId,
-                EventTypeName = existingEvent.EventType?.Name ?? "-",
-                CreatedById = existingEvent.CreatedById,
-                CreatedByEmail = existingEvent.CreatedBy?.Email ?? "-",
-                ImageId = existingEvent.ImageId,
-                ImageFileName = existingEvent.Image?.FileName ?? "-"
-            };
-        }
-
-        // Maps EventCreateVM to a new Event entity.
-        private static Event MapToCreateEntity(EventCreateVM model, int fallbackCreatedById)
-        {
-            return new Event
-            {
-                Name = model.Name,
-                Description = model.Description,
-                StartTime = model.StartTime,
-                EndTime = model.EndTime,
-                Location = model.Location,
-                Capacity = model.Capacity,
-                EventTypeId = model.EventTypeId,
-                CreatedById = fallbackCreatedById,
-                ImageId = model.ImageId
-            };
-        }
-
-        // Applies editable EventEditVM fields to an existing Event entity.
-        private static void ApplyEditToEntity(EventEditVM model, Event existingEvent)
-        {
-            existingEvent.Name = model.Name;
-            existingEvent.Description = model.Description;
-            existingEvent.StartTime = model.StartTime;
-            existingEvent.EndTime = model.EndTime;
-            existingEvent.Location = model.Location;
-            existingEvent.Capacity = model.Capacity;
-            existingEvent.EventTypeId = model.EventTypeId;
-            existingEvent.ImageId = model.ImageId;
         }
 
         // Returns true when event exists and is not soft-deleted.

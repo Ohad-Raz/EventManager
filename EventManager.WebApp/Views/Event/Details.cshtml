@@ -66,7 +66,38 @@
         </dd>
     </dl>
 </div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+
+@* Displays performers assigned to this event. *@
+<h4 class="mt-4">Performers</h4>
+
+@if (Model.Performers.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Bio</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var performer in Model.Performers)
+            {
+                <tr>
+                    <td>@performer.Name</td>
+                    <td>@(string.IsNullOrWhiteSpace(performer.Bio) ? "-" : performer.Bio)</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">No performers assigned to this event.</div>
+}
+
+<div class="form-group">
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="mt-3 btn btn-primary">Edit</a>
+    <a asp-action="Index" class="mt-3 btn btn-outline-primary">Back to List</a>
 </div>

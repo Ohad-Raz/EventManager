@@ -37,5 +37,7 @@ namespace EventManager.WebApp.ViewModels
 
         [Display(Name = "Image")]
         public string ImageFileName { get; set; } = null!;
+
+        public List<PerformerDisplayVM> Performers { get; set; } = new();
     }
 }

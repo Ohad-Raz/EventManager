@@ -1,11 +1,14 @@
+using AutoMapper;
 using EventManager.DAL.Models;
 using EventManager.DAL.Repositories;
+using EventManager.WebApp.Mapping;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 
 builder.Services.AddDbContext<EventManagerDbContext>(options =>
 {

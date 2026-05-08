@@ -262,4 +262,7 @@ C:\Users\Administrator\source\repos\Second Year\Fourth Semester(second year)\DWA
 C:\Users\Administrator\source\repos\Second Year\Fourth Semester(second year)\DWA\Project\EventMg_Project_DWA\EventManager.WebApp\bin\Debug\net8.0\Microsoft.Extensions.Logging.Abstractions.dll
 C:\Users\Administrator\source\repos\Second Year\Fourth Semester(second year)\DWA\Project\EventMg_Project_DWA\EventManager.WebApp\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
 C:\Users\Administrator\source\repos\Second Year\Fourth Semester(second year)\DWA\Project\EventMg_Project_DWA\EventManager.WebApp\bin\Debug\net8.0\System.ClientModel.dll
+C:\Users\Administrator\source\repos\Second Year\Fourth Semester(second year)\DWA\Project\EventMg_Project_DWA\EventManager.WebApp\bin\Debug\net8.0\AutoMapper.dll
+C:\Users\Administrator\source\repos\Second Year\Fourth Semester(second year)\DWA\Project\EventMg_Project_DWA\EventManager.WebApp\bin\Debug\net8.0\Microsoft.Extensions.Primitives.dll
+C:\Users\Administrator\source\repos\Second Year\Fourth Semester(second year)\DWA\Project\EventMg_Project_DWA\EventManager.WebApp\bin\Debug\net8.0\System.Diagnostics.DiagnosticSource.dll
 C:\Users\Administrator\source\repos\Second Year\Fourth Semester(second year)\DWA\Project\EventMg_Project_DWA\EventManager.WebApp\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

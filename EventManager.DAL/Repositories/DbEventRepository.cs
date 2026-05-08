@@ -22,11 +22,14 @@ namespace EventManager.DAL.Repositories
         // Returns one event by id with related entities.
         public Event? GetEventByIdWithDetails(int id)
         {
-            // 1. find event by id with CreatedBy, EventType and Image
+            // 1. find event by id with all details needed by MVC Details page
             return _context.Events
                 .Include(e => e.CreatedBy)
                 .Include(e => e.EventType)
                 .Include(e => e.Image)
+                // Loads performer data together with the selected event for the Details page.
+                .Include(e => e.EventPerformers)
+                    .ThenInclude(ep => ep.Performer)
                 .FirstOrDefault(e => e.Id == id && e.DeletedAt == null);
         }
 
@@ -40,11 +43,13 @@ namespace EventManager.DAL.Repositories
         // Returns all events with related entities.
         public List<Event> GetAllEventsWithDetails()
         {
-            // 1. load all non-deleted events with CreatedBy, EventType and Image
+            // 1. load all non-deleted events with related entities
             return _context.Events
                 .Include(e => e.CreatedBy)
                 .Include(e => e.EventType)
                 .Include(e => e.Image)
+                .Include(e => e.EventPerformers)
+                    .ThenInclude(ep => ep.Performer)
                 .Where(e => e.DeletedAt == null)
                 .ToList();
         }
