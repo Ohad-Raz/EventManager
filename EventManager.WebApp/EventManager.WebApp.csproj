@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <Compile Remove="Controllers\UsersController.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\EventManager.DAL\EventManager.DAL.csproj" />
   </ItemGroup>
 

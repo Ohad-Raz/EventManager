@@ -1,0 +1,11 @@
+﻿@{
+    ViewData["Title"] = "Access Denied";
+}
+
+@* Friendly access denied page for unauthorized MVC users. *@
+<div class="alert alert-danger mt-3">
+    <h2>Access Denied</h2>
+    <p>You do not have permission to access this page.</p>
+</div>
+
+<a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary">Back Home</a>
