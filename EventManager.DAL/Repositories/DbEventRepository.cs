@@ -164,10 +164,8 @@ namespace EventManager.DAL.Repositories
             }
         }
 
-        // Saves pending database changes.
         public int SaveChanges()
         {
-            // 1. call SaveChanges
             return _context.SaveChanges();
         }
 

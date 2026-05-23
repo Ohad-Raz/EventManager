@@ -63,12 +63,10 @@ public partial class EventManagerDbContext : DbContext
 
             entity.HasOne(d => d.Event).WithMany(p => p.EventPerformers)
                 .HasForeignKey(d => d.EventId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_EventPerformer_Event");
 
             entity.HasOne(d => d.Performer).WithMany(p => p.EventPerformers)
                 .HasForeignKey(d => d.PerformerId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_EventPerformer_Performer");
         });
 
@@ -96,7 +94,7 @@ public partial class EventManagerDbContext : DbContext
         {
             entity.ToTable("Log");
 
-            entity.Property(e => e.Message).HasMaxLength(1024);
+            entity.Property(e => e.Message).HasMaxLength(1000);
             entity.Property(e => e.Timestamp).HasDefaultValueSql("(getdate())");
         });
 

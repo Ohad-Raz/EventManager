@@ -30,7 +30,16 @@ builder.Services
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
     });
+//ex11.7
+builder.Services.AddDistributedMemoryCache();
 
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(10);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+//end
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -49,6 +58,9 @@ app.UseRouting();
 // Enable cookie authentication before authorization checks.
 app.UseAuthentication();
 app.UseAuthorization();
+//ex11.7
+app.UseSession();
+//end
 
 app.MapControllerRoute(
     name: "default",

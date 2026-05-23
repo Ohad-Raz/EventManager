@@ -1,0 +1,76 @@
+﻿@model EventManager.WebApp.ViewModels.EventSearchVM
+
+@{
+    ViewData["Title"] = "Search Events";
+}
+
+<h1>Search Events</h1>
+
+<form asp-action="Search" method="GET">
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input asp-for="Q" class="form-control" placeholder="Search by name, description, or location" />
+        </div>
+
+        <div class="col-md-3">
+            <select asp-for="EventTypeId" asp-items="Model.EventTypeItems" class="form-select">
+                <option value="">All event types</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <select asp-for="OrderBy" class="form-select">
+                <option value="id">Default</option>
+                <option value="name">Name</option>
+                <option value="starttime">Start Time</option>
+                <option value="capacity">Capacity</option>
+                <option value="location">Location</option>
+                <option value="eventtype">Event Type</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <select asp-for="Size" class="form-select">
+                <option>1</option>
+                <option>2</option>
+                <option>5</option>
+            </select>
+        </div>
+
+        <div class="col-md-1">
+            @* <input type="submit" value="Go" class="btn btn-primary" /> *@
+            <input type="submit" value="Go" name="submit" class="btn btn-primary" />
+            @* //allows the action to know whether the page was opened normally or submitted by the user. *@
+        </div>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Event Type</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Location</th>
+            <th>Capacity</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Events)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.EventTypeName</td>
+                <td>@item.StartTime</td>
+                <td>@item.EndTime</td>
+                <td>@item.Location</td>
+                <td>@item.Capacity</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

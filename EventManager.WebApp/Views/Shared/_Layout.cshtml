@@ -28,6 +28,10 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Event" asp-action="Index">Events</a>
                         </li>
 
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Event" asp-action="Search">Search Events</a>
+                        </li>
+
                         @* Admin-only link for event management. *@
                         @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
                         {

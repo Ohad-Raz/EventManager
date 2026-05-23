@@ -4,6 +4,8 @@ using EventManager.DAL.Repositories;
 using EventManager.WebAPI.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace EventManager.WebAPI.Controllers
 {
@@ -125,7 +127,7 @@ namespace EventManager.WebAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
-
+        
         /// <summary>
         /// Creates a new event.
         /// Endpoint: POST /api/Event

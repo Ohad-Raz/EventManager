@@ -5,9 +5,14 @@
 }
 
 <h1>Index</h1>
-
+@if (TempData.ContainsKey("newEventName"))
+{
+    <div class="alert alert-primary" role="alert">
+        A new event @TempData["newEventName"] has been created.
+    </div>
+}
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create" class="btn btn-outline-primary">Create New</a>
 </p>
 <table class="table">
     <thead>

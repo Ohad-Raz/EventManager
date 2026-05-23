@@ -1,10 +1,14 @@
 using AutoMapper;
 using EventManager.DAL.Models;
 using EventManager.DAL.Repositories;
+using EventManager.WebApp.Extensions;
 using EventManager.WebApp.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
+using System.Runtime.Intrinsics.X86;
 
 namespace EventManager.WebApp.Controllers
 {
@@ -54,6 +58,7 @@ namespace EventManager.WebApp.Controllers
         }
 
         // GET: Event/Create
+        [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
             // 1. load dropdown values needed for create form
@@ -64,6 +69,7 @@ namespace EventManager.WebApp.Controllers
         }
 
         // POST: Event/Create
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Create(EventCreateVM model)
@@ -92,10 +98,195 @@ namespace EventManager.WebApp.Controllers
             _eventRepository.AddEvent(newEvent);
             _eventRepository.SaveChanges();
 
+            TempData["newEventName"] = newEvent.Name;
             return RedirectToAction(nameof(Index));
         }
 
+        //exercise 11 example:
+
+        public ActionResult GetEventsByCapacity([FromQuery] int? min, [FromQuery] int? max)
+        {
+            try
+            {
+                IQueryable<Event> events = _eventRepository.GetAllEventsWithDetails().AsQueryable();
+
+                if (min.HasValue)
+                {
+                    events = events.Where(x => x.Capacity >= min.Value);
+                }
+
+                if (max.HasValue)
+                {
+                    events = events.Where(x => x.Capacity <= max.Value);
+                }
+
+                //var eventVms = events.Select(x => new EventVM
+                //{
+                //    Id = x.Id,
+                //    Name = x.Name,
+                //    Description = x.Description,
+                //    StartTime = x.StartTime,
+                //    EndTime = x.EndTime,
+                //    Location = x.Location,
+                //    Capacity = x.Capacity,
+                //    EventTypeId = x.EventTypeId,
+                //    EventTypeName = x.EventType.Name
+                //}).ToList();
+                List<EventVM> eventVms = events.Select(x => _mapper.Map<EventVM>(x)).ToList();
+
+
+                return View("Index", eventVms);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        //exercise 11 example:
+
+        //public ActionResult Search([FromQuery] string? q, [FromQuery] string? sortPropery)
+        //{
+        //    try
+        //    {
+        //        IQueryable<Event> events = _eventRepository.GetAllEventsWithDetails().AsQueryable();
+
+        //        if (!string.IsNullOrEmpty(SearchVm.Q))
+        //        {
+        //            events = events.Where(x =>
+        //                x.Name.Contains(searchVm.Q) ||
+        //                x.Description.Contains(searchVm.Q) ||
+        //                x.Location.Contains(searchVm.Q));
+        //        }
+
+        //        if (max.HasValue)
+        //        {
+        //            events = events.Where(x => x.Capacity <= max.Value);
+        //        }
+
+        //        List<SearchVm> searchVms = events.Select(x => _mapper.Map<EventVM>(x)).ToList();
+
+
+        //        return View("View", searchVms);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw ex;
+        //    }
+        //}
+        public ActionResult Search(EventSearchVM searchVm)
+        {
+            try
+            {
+                IQueryable<Event> events = _eventRepository
+                    .GetAllEventsWithDetails()
+                    .AsQueryable();
+                //ex11
+                if (string.IsNullOrEmpty(searchVm.Q) && string.IsNullOrEmpty(searchVm.Submit))
+                {
+                    searchVm.Q = Request.Cookies["eventQuery"];
+                }
+                var option = new CookieOptions
+                {
+                    Expires = DateTime.Now.AddMinutes(15)
+                };
+
+                Response.Cookies.Append("eventQuery", searchVm.Q ?? "", option);
+                //end
+
+                if (!string.IsNullOrEmpty(searchVm.Q))
+                {
+                    events = events.Where(x =>
+                        x.Name.Contains(searchVm.Q) ||
+                        x.Description.Contains(searchVm.Q) ||
+                        x.Location.Contains(searchVm.Q));
+                }
+
+                if (searchVm.EventTypeId.HasValue)
+                {
+                    events = events.Where(x => x.EventTypeId == searchVm.EventTypeId.Value);
+                }
+
+                switch ((searchVm.OrderBy ?? "").ToLower())
+                {
+                    case "name":
+                        events = events.OrderBy(x => x.Name);
+                        break;
+                    case "starttime":
+                        events = events.OrderBy(x => x.StartTime);
+                        break;
+                    case "capacity":
+                        events = events.OrderBy(x => x.Capacity);
+                        break;
+                    case "location":
+                        events = events.OrderBy(x => x.Location);
+                        break;
+                    case "eventtype":
+                        events = events.OrderBy(x => x.EventType.Name);
+                        break;
+                    default:
+                        events = events.OrderBy(x => x.Id);
+                        break;
+                }
+
+                searchVm.Events = events
+                    .Skip((searchVm.Page - 1) * searchVm.Size)
+                    .Take(searchVm.Size)
+                    .Select(x => _mapper.Map<EventVM>(x))
+                    .ToList();
+
+                //FillEventTypeItems(searchVm);
+                searchVm.EventTypeItems = GetEventTypeListItems();
+                return View(searchVm);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+    // For each EventType from the database: use the Id as the dropdown value
+    //use the Name as the displayed text
+//        private void FillEventTypeItems(EventSearchVM searchVm)
+//        {
+//            searchVm.EventTypeItems = _eventRepository
+//                .GetAllEventTypes()
+//                .ConvertAll(x => new SelectListItem
+//                {
+//                    Value = x.Id.ToString(),
+//                    Text = x.Name
+//                })
+//;
+//        }
+        private List<SelectListItem> GetEventTypeListItems()
+        {
+            var eventTypeListItemsJson = HttpContext.Session.GetString("EventTypeListItems");
+
+            List<SelectListItem> eventTypeListItems;
+
+            if (eventTypeListItemsJson == null)
+            {
+                eventTypeListItems = _eventRepository.GetAllEventTypes()
+                    .ConvertAll(x => new SelectListItem
+                    {
+                        Text = x.Name,
+                        Value = x.Id.ToString()
+                    })
+;
+
+                HttpContext.Session.SetString("EventTypeListItems", eventTypeListItems.ToJson());
+            }
+            else
+            {
+                //If deserialization gives me null, at least return an empty list instead of crashing later
+                eventTypeListItems = eventTypeListItemsJson.FromJson<List<SelectListItem>>()
+                    ?? new List<SelectListItem>();
+            }
+
+            return eventTypeListItems;
+        }
+        //end of ex11.7 example!
+
         // GET: Event/Edit/5
+        [Authorize(Roles = "Admin")]
         public IActionResult Edit(int? id)
         {
             // 1. validate route id
@@ -120,6 +311,7 @@ namespace EventManager.WebApp.Controllers
         }
 
         // POST: Event/Edit/5
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Edit(int id, EventEditVM model)
@@ -164,6 +356,7 @@ namespace EventManager.WebApp.Controllers
         }
 
         // GET: Event/Delete/5
+        [Authorize(Roles = "Admin")]
         public IActionResult Delete(int? id)
         {
             // 1. validate route id
@@ -185,6 +378,7 @@ namespace EventManager.WebApp.Controllers
         }
 
         // POST: Event/Delete/5
+        [Authorize(Roles = "Admin")]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
@@ -197,7 +391,6 @@ namespace EventManager.WebApp.Controllers
                 _eventRepository.RemoveEvent(existingEvent);
                 _eventRepository.SaveChanges();
             }
-
             return RedirectToAction(nameof(Index));
         }
 

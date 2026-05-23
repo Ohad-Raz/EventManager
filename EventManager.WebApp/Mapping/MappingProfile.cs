@@ -26,6 +26,9 @@ namespace EventManager.WebApp.Mapping
 
             CreateMap<EventCreateVM, Event>();
 
+            CreateMap<EventSearchVM, Event>();
+
+
             CreateMap<EventEditVM, Event>();
         }
     }
