@@ -9,3 +9,4 @@ EventManager.WebAPI/appsettings.Development.json
 EventManager.WebApp/appsettings.json
 EventManager.WebApp/appsettings.Development.json
 docs/
+PROJECT_HANDOFF.md

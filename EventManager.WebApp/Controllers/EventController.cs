@@ -15,11 +15,13 @@ namespace EventManager.WebApp.Controllers
     public class EventController : Controller
     {
         private readonly IEventRepository _eventRepository;
+        private readonly IRegistrationRepository _registrationRepository;
         private readonly IMapper _mapper;
 
-        public EventController(IEventRepository eventRepository, IMapper mapper)
+        public EventController(IEventRepository eventRepository, IRegistrationRepository registrationRepository, IMapper mapper)
         {
             _eventRepository = eventRepository;
+            _registrationRepository = registrationRepository;
             _mapper = mapper;
         }
 
@@ -54,6 +56,32 @@ namespace EventManager.WebApp.Controllers
 
             // 3. map entity to display model and return view
             EventVM model = _mapper.Map<EventVM>(existingEvent);
+
+            // 4. for logged-in users, show whether they are already registered
+            if (User.Identity?.IsAuthenticated == true && User.IsInRole("User"))
+            {
+                string? username = User.Identity?.Name;
+                if (!string.IsNullOrEmpty(username))
+                {
+                    User? currentUser = _registrationRepository.GetUserByUsername(username);
+                    if (currentUser != null)
+                    {
+                        ViewBag.IsAlreadyRegistered = _registrationRepository.UserIsActivelyRegistered(
+                            currentUser.Id, id.Value);
+                    }
+                }
+            }
+
+            // 5. for admins, load performers available to assign
+            if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+            {
+                List<Performer> unassignedPerformers = _eventRepository.GetUnassignedPerformersForEvent(id.Value);
+                ViewBag.AllPerformersAssigned = unassignedPerformers.Count == 0;
+                ViewBag.AvailablePerformerItems = unassignedPerformers
+                    .Select(p => new SelectListItem { Value = p.Id.ToString(), Text = p.Name })
+                    .ToList();
+            }
+
             return View(model);
         }
 
@@ -243,19 +271,19 @@ namespace EventManager.WebApp.Controllers
                 throw;
             }
         }
-    // For each EventType from the database: use the Id as the dropdown value
-    //use the Name as the displayed text
-//        private void FillEventTypeItems(EventSearchVM searchVm)
-//        {
-//            searchVm.EventTypeItems = _eventRepository
-//                .GetAllEventTypes()
-//                .ConvertAll(x => new SelectListItem
-//                {
-//                    Value = x.Id.ToString(),
-//                    Text = x.Name
-//                })
-//;
-//        }
+        // For each EventType from the database: use the Id as the dropdown value
+        //use the Name as the displayed text
+        //        private void FillEventTypeItems(EventSearchVM searchVm)
+        //        {
+        //            searchVm.EventTypeItems = _eventRepository
+        //                .GetAllEventTypes()
+        //                .ConvertAll(x => new SelectListItem
+        //                {
+        //                    Value = x.Id.ToString(),
+        //                    Text = x.Name
+        //                })
+        //;
+        //        }
         private List<SelectListItem> GetEventTypeListItems()
         {
             var eventTypeListItemsJson = HttpContext.Session.GetString("EventTypeListItems");
@@ -353,6 +381,183 @@ namespace EventManager.WebApp.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // POST: Event/Register/5
+        [Authorize(Roles = "User")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Register(int id)
+        {
+            // Event id comes from the route; must exist and not be soft-deleted.
+            Event? existingEvent = _eventRepository.GetEventById(id);
+            if (existingEvent == null)
+            {
+                TempData["RegistrationError"] = "This event is not available for registration.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // User id is resolved on the server from the signed-in cookie, never from the form.
+            string? username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return RedirectToAction("Login", "User", new { returnUrl = Url.Action(nameof(Details), new { id }) });
+            }
+
+            User? currentUser = _registrationRepository.GetUserByUsername(username);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Login", "User", new { returnUrl = Url.Action(nameof(Details), new { id }) });
+            }
+
+            Registration? existingRegistration =
+                _registrationRepository.GetRegistrationByUserAndEvent(currentUser.Id, id);
+
+            // Prevent duplicate active registration.
+            if (existingRegistration != null && existingRegistration.IsActive)
+            {
+                TempData["RegistrationDuplicate"] = "You are already registered for this event.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            // Reactivate a previous registration instead of creating a duplicate row.
+            if (existingRegistration != null && !existingRegistration.IsActive)
+            {
+                existingRegistration.IsActive = true;
+                existingRegistration.Name = $"Registration for {existingEvent.Name}";
+                _registrationRepository.SaveChanges();
+
+                TempData["RegistrationSuccess"] = "You have successfully registered for this event.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            Registration newRegistration = new Registration
+            {
+                Name = $"Registration for {existingEvent.Name}",
+                UserId = currentUser.Id,
+                EventId = id,
+                RegisteredAt = DateTime.Now,
+                IsActive = true
+            };
+
+            _registrationRepository.AddRegistration(newRegistration);
+            _registrationRepository.SaveChanges();
+
+            TempData["RegistrationSuccess"] = "You have successfully registered for this event.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST: Event/CancelRegistration/5
+        [Authorize(Roles = "User")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult CancelRegistration(int id)
+        {
+            Event? existingEvent = _eventRepository.GetEventById(id);
+            if (existingEvent == null)
+            {
+                TempData["RegistrationError"] = "This event is not available.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            string? username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return RedirectToAction("Login", "User", new { returnUrl = Url.Action(nameof(Details), new { id }) });
+            }
+
+            User? currentUser = _registrationRepository.GetUserByUsername(username);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Login", "User", new { returnUrl = Url.Action(nameof(Details), new { id }) });
+            }
+
+            Registration? activeRegistration =
+                _registrationRepository.GetActiveRegistrationByUserAndEvent(currentUser.Id, id);
+            if (activeRegistration == null)
+            {
+                TempData["RegistrationError"] = "You are not registered for this event.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            activeRegistration.IsActive = false;
+            _registrationRepository.SaveChanges();
+
+            TempData["RegistrationSuccess"] = "Your registration for this event has been cancelled.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST: Event/AssignPerformer/5
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AssignPerformer(int id, int performerId)
+        {
+            Event? existingEvent = _eventRepository.GetEventById(id);
+            if (existingEvent == null)
+            {
+                TempData["PerformerError"] = "Event not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            Performer? performer = _eventRepository.GetPerformerById(performerId);
+            if (performer == null)
+            {
+                TempData["PerformerError"] = "Performer not found.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            if (_eventRepository.EventPerformerRelationExists(id, performerId))
+            {
+                TempData["PerformerError"] = "This performer is already assigned to the event.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            EventPerformer eventPerformer = new EventPerformer
+            {
+                EventId = id,
+                PerformerId = performerId
+            };
+
+            _eventRepository.AddEventPerformer(eventPerformer);
+            _eventRepository.SaveChanges();
+
+            TempData["PerformerSuccess"] = $"{performer.Name} was assigned to the event.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST: Event/RemovePerformer/5
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RemovePerformer(int id, int performerId)
+        {
+            Event? existingEvent = _eventRepository.GetEventById(id);
+            if (existingEvent == null)
+            {
+                TempData["PerformerError"] = "Event not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            Performer? performer = _eventRepository.GetPerformerById(performerId);
+            if (performer == null)
+            {
+                TempData["PerformerError"] = "Performer not found.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            EventPerformer? existingRelation = _eventRepository.GetEventPerformerRelation(id, performerId);
+            if (existingRelation == null)
+            {
+                TempData["PerformerError"] = "This performer is not assigned to the event.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            _eventRepository.RemoveEventPerformer(existingRelation);
+            _eventRepository.SaveChanges();
+
+            TempData["PerformerSuccess"] = $"{performer.Name} was removed from the event.";
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         // GET: Event/Delete/5

@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSwaggerGen(option =>
 {
     option.SwaggerDoc("v1",
-        new OpenApiInfo { Title = "RWA Web API", Version = "v1" });
+        new OpenApiInfo { Title = "Event Manager Web API", Version = "v1" });
 
     option.AddSecurityDefinition("Bearer",
         new OpenApiSecurityScheme
@@ -49,9 +49,7 @@ builder.Services.AddScoped<ILogRepository, DbLogRepository>();
 builder.Services.AddScoped<IUserRepository, DbUserRepository>();
 builder.Services.AddScoped<IPerformerRepository, DbPerformerRepository>();
 builder.Services.AddScoped<IRegistrationRepository, DbRegistrationRepository>();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 // Configure JWT security services
 builder.Services.AddDbContext<EventManagerDbContext>(options => {
     options.UseSqlServer("name=ConnectionStrings:DefaultConn");

@@ -73,6 +73,7 @@ namespace EventManager.WebApp.Controllers
                 // 7. save new user to database
                 _userRepository.AddUser(user);
                 _userRepository.SaveChanges();
+       TempData["RegisterMessage"] = "You have been registered and logged in successfully.";
 
                 return RedirectToAction(nameof(Login));
             }
@@ -106,7 +107,7 @@ namespace EventManager.WebApp.Controllers
                 if (!ModelState.IsValid)
                     return View(model);
 
-                string genericLoginFail = "Incorrect username or password";
+                const string genericLoginFail = "Incorrect username or password";
 
                 // 2. find user by username and also load Role for cookie role claim
                 User? existingUser = _userRepository.GetUserWithRoleByUsername(model.Username);
@@ -148,10 +149,11 @@ namespace EventManager.WebApp.Controllers
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     claimsPrincipal);
 
-                // 8. redirect safely after successful login
+                // 8. redirect safely after successful login, using LocalRedirect to prevent redirect to external sites!!!
                 if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
-                    return Redirect(model.ReturnUrl);
+                    return LocalRedirect(model.ReturnUrl);
 
+                TempData["LoginMessage"] = "You have been logged in successfully.";
                 return RedirectToAction("Index", "Home");
             }
             catch (Exception ex)
@@ -165,7 +167,9 @@ namespace EventManager.WebApp.Controllers
         public async Task<IActionResult> Logout()
         {
             // 1. remove authentication cookie
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext
+                  .SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            TempData["LogoutMessage"] = "You have been logged out.";
 
             return RedirectToAction("Index", "Home");
         }

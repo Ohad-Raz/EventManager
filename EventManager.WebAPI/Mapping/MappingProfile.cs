@@ -38,6 +38,12 @@ namespace EventManager.WebAPI.Mapping
             CreateMap<PerformerDto, Performer>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore());
 
+            CreateMap<EventType, EventTypeDto>();
+
+            CreateMap<EventTypeDto, EventType>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Events, opt => opt.Ignore());
+
             // Registration entity -> RegistrationDetailsDto
             // Includes data from related entities:
             // Event.Name -> EventName

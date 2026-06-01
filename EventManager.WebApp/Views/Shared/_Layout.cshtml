@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/EventManager.WebApp.styles.css" asp-append-version="true" />
+    @* <style>
+        .btn-primary,
+        .btn-primary:hover,
+        .btn-primary:active,
+        .btn-primary:visited {
+            background-color: #8064A2 !important;
+        }
+    </style> *@
 </head>
 <body>
     <header>
@@ -32,11 +40,17 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Event" asp-action="Search">Search Events</a>
                         </li>
 
-                        @* Admin-only link for event management. *@
+                        @* Admin-only link for event management. user comes from httpcontext *@
                         @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Event" asp-action="Create">Create Event</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="EventType" asp-action="Index">Event Types</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Performer" asp-action="Index">Performers</a>
                             </li>
                         }
                     </ul>

@@ -22,7 +22,7 @@ public class HomeController : Controller
     {
         return View();
     }
-
+    //do i really need error action
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

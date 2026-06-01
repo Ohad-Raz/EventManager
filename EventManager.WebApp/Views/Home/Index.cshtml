@@ -1,7 +1,24 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
-
+@if (TempData.ContainsKey("LogoutMessage"))
+{
+    <div class="alert alert-primary" role="alert">
+       @TempData["LogoutMessage"]
+    </div>
+}
+@if (TempData.ContainsKey("LoginMessage") && !TempData.ContainsKey("RegisterMessage"))
+{
+    <div class="alert alert-primary" role="alert">
+       @TempData["LoginMessage"]
+    </div>
+}
+@if (TempData.ContainsKey("RegisterMessage"))
+{
+    <div class="alert alert-primary" role="alert">
+       @TempData["RegisterMessage"]
+    </div>
+}
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>

@@ -17,6 +17,11 @@ namespace EventManager.DAL.Repositories
         List<User> GetAllUsers();
         List<EventType> GetAllEventTypes();
         List<Image> GetAllImages();
+        void AddEventType(EventType eventType);
+        void UpdateEventType(EventType eventType);
+        void RemoveEventType(EventType eventType);
+        bool EventTypeNameExists(string name, int? excludeId = null);
+        bool EventTypeHasEvents(int eventTypeId);
 
         void AddEvent(Event newEvent);
         void UpdateEvent(Event existingEvent);
@@ -24,6 +29,7 @@ namespace EventManager.DAL.Repositories
         int SaveChanges();
 
         List<EventPerformer> GetEventPerformersByEventId(int eventId);
+        List<Performer> GetUnassignedPerformersForEvent(int eventId);
         Performer? GetPerformerById(int performerId);
         bool EventPerformerRelationExists(int eventId, int performerId);
         EventPerformer? GetEventPerformerRelation(int eventId, int performerId);

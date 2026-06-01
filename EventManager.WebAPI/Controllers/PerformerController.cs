@@ -146,6 +146,11 @@ namespace EventManager.WebAPI.Controllers
                 Performer? performer = _performerRepository.GetPerformerById(id);
                 // 2. if not found, return NotFound
                 if (performer == null) return NotFound($"Performer with id={id} was not found.");
+
+                // Block delete when performer is still assigned to events.
+                if (_performerRepository.PerformerHasEventAssignments(id))
+                    return BadRequest($"Performer with id={id} cannot be deleted because events use it.");
+
                 // 3. remove performer from database
                 _performerRepository.RemovePerformer(performer);
                 // 4. save changes

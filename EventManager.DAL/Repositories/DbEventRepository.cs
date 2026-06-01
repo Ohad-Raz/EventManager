@@ -132,6 +132,46 @@ namespace EventManager.DAL.Repositories
             return _context.Images.ToList();
         }
 
+        // Adds a new event type row.
+        public void AddEventType(EventType eventType)
+        {
+            _context.EventTypes.Add(eventType);
+        }
+
+        // Marks an event type row as modified.
+        public void UpdateEventType(EventType eventType)
+        {
+            _context.EventTypes.Update(eventType);
+        }
+
+        // Removes an event type row.
+        public void RemoveEventType(EventType eventType)
+        {
+            _context.EventTypes.Remove(eventType);
+        }
+
+        // Checks whether an event type name already exists.
+        public bool EventTypeNameExists(string name, int? excludeId = null)
+        {
+            string trimmedName = name.Trim();
+
+            if (excludeId.HasValue)
+            {
+                // Edit: allow the current row to keep its own name.
+                return _context.EventTypes.Any(x =>
+                    x.Name == trimmedName && x.Id != excludeId.Value);
+            }
+
+            // Create: any row with this name is a duplicate.
+            return _context.EventTypes.Any(x => x.Name == trimmedName);
+        }
+
+        // Checks whether any events reference this event type.
+        public bool EventTypeHasEvents(int eventTypeId)
+        {
+            return _context.Events.Any(e => e.EventTypeId == eventTypeId && e.DeletedAt == null);
+        }
+
         // Adds a new event row.
         public void AddEvent(Event newEvent)
         {
@@ -176,6 +216,20 @@ namespace EventManager.DAL.Repositories
             return _context.EventPerformers
                 .Include(x => x.Performer)
                 .Where(x => x.EventId == eventId)
+                .ToList();
+        }
+
+        // Returns performers not yet linked to the given event.
+        public List<Performer> GetUnassignedPerformersForEvent(int eventId)
+        {
+            List<int> assignedPerformerIds = _context.EventPerformers
+                .Where(ep => ep.EventId == eventId)
+                .Select(ep => ep.PerformerId)
+                .ToList();
+
+            return _context.Performers
+                .Where(p => !assignedPerformerIds.Contains(p.Id))
+                .OrderBy(p => p.Name)
                 .ToList();
         }
 

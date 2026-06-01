@@ -7,6 +7,8 @@ namespace EventManager.DAL.Repositories
         User? GetUserByUsername(string username);
         Event? GetEventById(int id);
         Registration? GetRegistrationByUserAndEvent(int userId, int eventId);
+        Registration? GetActiveRegistrationByUserAndEvent(int userId, int eventId);
+        bool UserIsActivelyRegistered(int userId, int eventId);
         void AddRegistration(Registration registration);
         List<Registration> GetAllRegistrationsWithDetails();
         Registration? GetRegistrationByIdWithDetails(int id);

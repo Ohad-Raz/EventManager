@@ -30,6 +30,18 @@ namespace EventManager.WebApp.Mapping
 
 
             CreateMap<EventEditVM, Event>();
+
+            CreateMap<EventType, EventTypeVM>();
+
+            CreateMap<EventTypeVM, EventType>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Events, opt => opt.Ignore());
+
+            CreateMap<Performer, PerformerVM>();
+
+            CreateMap<PerformerVM, Performer>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.EventPerformers, opt => opt.Ignore());
         }
     }
 }

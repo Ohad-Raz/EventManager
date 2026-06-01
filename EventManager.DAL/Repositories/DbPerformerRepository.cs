@@ -32,11 +32,39 @@ namespace EventManager.DAL.Repositories
             _context.Performers.Add(performer);
         }
 
+        // Marks a performer row as modified.
+        public void UpdatePerformer(Performer performer)
+        {
+            _context.Performers.Update(performer);
+        }
+
         // Removes a performer row.
         public void RemovePerformer(Performer performer)
         {
             // 1. remove Performer row
             _context.Performers.Remove(performer);
+        }
+
+        // Checks whether a performer name already exists.
+        public bool PerformerNameExists(string name, int? excludeId = null)
+        {
+            string trimmedName = name.Trim();
+
+            if (excludeId.HasValue)
+            {
+                // Edit: allow the current row to keep its own name.
+                return _context.Performers.Any(x =>
+                    x.Name == trimmedName && x.Id != excludeId.Value);
+            }
+
+            // Create: any row with this name is a duplicate.
+            return _context.Performers.Any(x => x.Name == trimmedName);
+        }
+
+        // Checks whether the performer is assigned to any event.
+        public bool PerformerHasEventAssignments(int performerId)
+        {
+            return _context.EventPerformers.Any(ep => ep.PerformerId == performerId);
         }
 
         // Saves pending database changes.

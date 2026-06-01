@@ -34,6 +34,21 @@ namespace EventManager.DAL.Repositories
                 .FirstOrDefault(r => r.UserId == userId && r.EventId == eventId);
         }
 
+        // Returns the active registration for this user and event, or null.
+        public Registration? GetActiveRegistrationByUserAndEvent(int userId, int eventId)
+        {
+            return _context.Registrations.FirstOrDefault(r =>
+                r.UserId == userId &&
+                r.EventId == eventId &&
+                r.IsActive);
+        }
+
+        // Returns true when the user already has an active registration for this event.
+        public bool UserIsActivelyRegistered(int userId, int eventId)
+        {
+            return GetActiveRegistrationByUserAndEvent(userId, eventId) != null;
+        }
+
         // Adds a new registration row.
         public void AddRegistration(Registration registration)
         {
