@@ -20,7 +20,13 @@ namespace EventManager.WebApp.ViewModels
         public int Page { get; set; } = 1;
 
         [Display(Name = "Page size")]
-        public int Size { get; set; } = 10;
+        public int Size { get; set; } = 5;
+
+        public int LastPage { get; set; } = 1;
+
+        public bool HasPreviousPage { get; set; }
+
+        public bool HasNextPage { get; set; }
 
         public IEnumerable<EventVM> Events { get; set; } = new List<EventVM>();
 

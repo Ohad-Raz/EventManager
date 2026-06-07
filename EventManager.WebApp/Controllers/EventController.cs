@@ -256,13 +256,40 @@ namespace EventManager.WebApp.Controllers
                         break;
                 }
 
+                // New search from the form resets to page 1.
+                if (!string.IsNullOrEmpty(searchVm.Submit))
+                {
+                    searchVm.Page = 1;
+                }
+
+                if (searchVm.Size < 1)
+                {
+                    searchVm.Size = 10;
+                }
+
+                int totalCount = events.Count();
+                int lastPage = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)searchVm.Size);
+
+                if (searchVm.Page < 1)
+                {
+                    searchVm.Page = 1;
+                }
+
+                if (searchVm.Page > lastPage)
+                {
+                    searchVm.Page = lastPage;
+                }
+
+                searchVm.LastPage = lastPage;
+                searchVm.HasPreviousPage = searchVm.Page > 1;
+                searchVm.HasNextPage = searchVm.Page < lastPage;
+
                 searchVm.Events = events
                     .Skip((searchVm.Page - 1) * searchVm.Size)
                     .Take(searchVm.Size)
                     .Select(x => _mapper.Map<EventVM>(x))
                     .ToList();
 
-                //FillEventTypeItems(searchVm);
                 searchVm.EventTypeItems = GetEventTypeListItems();
                 return View(searchVm);
             }

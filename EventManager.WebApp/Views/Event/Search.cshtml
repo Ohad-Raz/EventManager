@@ -31,16 +31,14 @@
 
         <div class="col-md-2">
             <select asp-for="Size" class="form-select">
-                <option>1</option>
-                <option>2</option>
-                <option>5</option>
+                <option value="10">5</option>
+                <option value="25">10</option>
+                <option value="50">20</option>
             </select>
         </div>
 
         <div class="col-md-1">
-            @* <input type="submit" value="Go" class="btn btn-primary" /> *@
             <input type="submit" value="Go" name="submit" class="btn btn-primary" />
-            @* //allows the action to know whether the page was opened normally or submitted by the user. *@
         </div>
     </div>
 </form>
@@ -74,3 +72,43 @@
         }
     </tbody>
 </table>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+    <p class="mb-0 text-muted">Page @Model.Page of @Model.LastPage</p>
+
+    <div class="btn-group" role="group" aria-label="Event search paging">
+        @if (Model.HasPreviousPage)
+        {
+            <a asp-action="Search"
+               asp-route-Q="@Model.Q"
+               asp-route-EventTypeId="@Model.EventTypeId"
+               asp-route-OrderBy="@Model.OrderBy"
+               asp-route-Size="@Model.Size"
+               asp-route-Page="@(Model.Page - 1)"
+               class="btn btn-outline-primary">
+                Previous
+            </a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-outline-secondary" disabled>Previous</button>
+        }
+
+        @if (Model.HasNextPage)
+        {
+            <a asp-action="Search"
+               asp-route-Q="@Model.Q"
+               asp-route-EventTypeId="@Model.EventTypeId"
+               asp-route-OrderBy="@Model.OrderBy"
+               asp-route-Size="@Model.Size"
+               asp-route-Page="@(Model.Page + 1)"
+               class="btn btn-outline-primary">
+                Next
+            </a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-outline-secondary" disabled>Next</button>
+        }
+    </div>
+</div>
