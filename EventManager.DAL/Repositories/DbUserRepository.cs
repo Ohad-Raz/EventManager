@@ -19,11 +19,12 @@ namespace EventManager.DAL.Repositories
             return _context.Users.Any(x => x.Username == username);
         }
 
-        // Checks whether email already exists.
-        public bool EmailExists(string email)
+        // Checks whether email already exists, optionally excluding one user id.
+        public bool EmailExists(string email, int? excludeUserId = null)
         {
-            // 1. check duplicate e-mails
-            return _context.Users.Any(x => x.Email == email);
+            return _context.Users.Any(x =>
+                x.Email == email &&
+                (!excludeUserId.HasValue || x.Id != excludeUserId.Value));
         }
 
         // Adds a new user row.

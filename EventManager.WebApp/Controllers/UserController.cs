@@ -5,6 +5,7 @@ using EventManager.WebAPI.Security;
 using EventManager.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventManager.WebApp.Controllers
@@ -178,6 +179,110 @@ namespace EventManager.WebApp.Controllers
         public IActionResult Forbidden()
         {
             return View();
+        }
+
+        // GET: User/Profile
+        [Authorize]
+        public IActionResult Profile()
+        {
+            ProfileVM? model = BuildProfileVmForCurrentUser();
+            if (model == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            return View(model);
+        }
+
+        // GET: User/ProfileData
+        [Authorize]
+        public IActionResult ProfileData()
+        {
+            ProfileVM? model = BuildProfileVmForCurrentUser();
+            if (model == null)
+            {
+                return Json(new { success = false, message = "User not found." });
+            }
+
+            return Json(new { success = true, profile = model });
+        }
+
+        // POST: User/UpdateProfile
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateProfile(ProfileVM model)
+        {
+            string? username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Json(new { success = false, message = "You must be logged in to update your profile." });
+            }
+
+            User? currentUser = _userRepository.GetUserWithRoleByUsername(username);
+            if (currentUser == null)
+            {
+                return Json(new { success = false, message = "User not found." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                IEnumerable<string> errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage);
+                return Json(new { success = false, message = string.Join(" ", errors) });
+            }
+
+            if (_userRepository.EmailExists(model.Email, currentUser.Id))
+            {
+                return Json(new { success = false, message = $"Email {model.Email} is already in use." });
+            }
+
+            // Update only profile fields; never Username, RoleId, or password fields from the form.
+            currentUser.FirstName = model.FirstName.Trim();
+            currentUser.LastName = model.LastName.Trim();
+            currentUser.Email = model.Email.Trim();
+            currentUser.Phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim();
+
+            _userRepository.SaveChanges();
+
+            ProfileVM updatedProfile = MapUserToProfileVm(currentUser);
+            return Json(new
+            {
+                success = true,
+                message = "Your profile has been updated successfully.",
+                profile = updatedProfile
+            });
+        }
+
+        private ProfileVM? BuildProfileVmForCurrentUser()
+        {
+            string? username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return null;
+            }
+
+            User? currentUser = _userRepository.GetUserWithRoleByUsername(username);
+            if (currentUser == null)
+            {
+                return null;
+            }
+
+            return MapUserToProfileVm(currentUser);
+        }
+
+        private static ProfileVM MapUserToProfileVm(User user)
+        {
+            return new ProfileVM
+            {
+                Username = user.Username,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                Phone = user.Phone,
+                RoleName = user.Role?.Name ?? "-"
+            };
         }
     }
 }
