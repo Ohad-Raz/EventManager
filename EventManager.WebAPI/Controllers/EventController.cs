@@ -15,11 +15,26 @@ namespace EventManager.WebAPI.Controllers
     {
         private readonly IMapper _mapper;
         private readonly IEventRepository _eventRepository;
+        private readonly IEventTypeRepository _eventTypeRepository;
+        private readonly IEventPerformerRepository _eventPerformerRepository;
+        private readonly IPerformerRepository _performerRepository;
+        private readonly IUserRepository _userRepository;
         private readonly ILogRepository _logRepository;
 
-        public EventController(IEventRepository eventRepository, ILogRepository logRepository, IMapper mapper)
+        public EventController(
+            IEventRepository eventRepository,
+            IEventTypeRepository eventTypeRepository,
+            IEventPerformerRepository eventPerformerRepository,
+            IPerformerRepository performerRepository,
+            IUserRepository userRepository,
+            ILogRepository logRepository,
+            IMapper mapper)
         {
             _eventRepository = eventRepository;
+            _eventTypeRepository = eventTypeRepository;
+            _eventPerformerRepository = eventPerformerRepository;
+            _performerRepository = performerRepository;
+            _userRepository = userRepository;
             _logRepository = logRepository;
             _mapper = mapper;
         }
@@ -153,14 +168,14 @@ namespace EventManager.WebAPI.Controllers
                     return Unauthorized("User identity is missing.");
 
                 // 4. load data for this request
-                User? existingUser = _eventRepository.GetUserByUsername(username);
+                User? existingUser = _userRepository.GetUserByUsername(username);
 
                 // 5. if user not found, return NotFound
                 if (existingUser == null)
                     return NotFound("User not found.");
 
                 // 6. validate referenced EventType
-                EventType? existingEventType = _eventRepository.GetEventTypeById(eventDto.EventTypeId);
+                EventType? existingEventType = _eventTypeRepository.GetEventTypeById(eventDto.EventTypeId);
 
                 if (existingEventType == null)
                 {
@@ -229,7 +244,7 @@ namespace EventManager.WebAPI.Controllers
                 }
 
                 // 4. validate referenced EventType and optional Image
-                EventType? existingEventType = _eventRepository.GetEventTypeById(eventDto.EventTypeId);
+                EventType? existingEventType = _eventTypeRepository.GetEventTypeById(eventDto.EventTypeId);
 
                 if (existingEventType == null)
                 {
@@ -319,7 +334,7 @@ namespace EventManager.WebAPI.Controllers
                     return NotFound("Event not found.");
 
                 // 3. load data for this request
-                List<EventPerformer> eventPerformers = _eventRepository.GetEventPerformersByEventId(id);
+                List<EventPerformer> eventPerformers = _eventPerformerRepository.GetEventPerformersByEventId(id);
 
                 // 4. map related performers to DTO list
                 List<PerformerDto> result = eventPerformers
@@ -364,14 +379,14 @@ namespace EventManager.WebAPI.Controllers
                     return NotFound("Event not found.");
 
                 // 4. load data for this request
-                Performer? performer = _eventRepository.GetPerformerById(eventPerformerDto.PerformerId);
+                Performer? performer = _performerRepository.GetPerformerById(eventPerformerDto.PerformerId);
 
                 // 5. if performer not found, return NotFound
                 if (performer == null)
                     return NotFound($"Performer with id={eventPerformerDto.PerformerId} was not found.");
 
                 // 6. check whether relation already exists
-                bool existingRelation = _eventRepository.EventPerformerRelationExists(id, eventPerformerDto.PerformerId);
+                bool existingRelation = _eventPerformerRepository.EventPerformerRelationExists(id, eventPerformerDto.PerformerId);
 
                 // 7. if relation already exists, return BadRequest
                 if (existingRelation)
@@ -384,10 +399,10 @@ namespace EventManager.WebAPI.Controllers
                     PerformerId = eventPerformerDto.PerformerId
                 };
 
-                _eventRepository.AddEventPerformer(patchedPerformer);
+                _eventPerformerRepository.AddEventPerformer(patchedPerformer);
 
                 // 9. save changes
-                _eventRepository.SaveChanges();
+                _eventPerformerRepository.SaveChanges();
 
                 // 10. return success response
                 return Ok($"Performer id={patchedPerformer.PerformerId} was added to Event id={eventById.Id}.");
@@ -418,24 +433,24 @@ namespace EventManager.WebAPI.Controllers
                     return NotFound("Event not found.");
 
                 // 3. load data for this request
-                Performer? performer = _eventRepository.GetPerformerById(performerId);
+                Performer? performer = _performerRepository.GetPerformerById(performerId);
 
                 // 4. if performer not found, return NotFound
                 if (performer == null)
                     return NotFound($"Performer with id={performerId} was not found.");
 
                 // 5. load data for this request
-                EventPerformer? existingRelation = _eventRepository.GetEventPerformerRelation(id, performerId);
+                EventPerformer? existingRelation = _eventPerformerRepository.GetEventPerformerRelation(id, performerId);
 
                 // 6. if relation not found, return NotFound
                 if (existingRelation == null)
                     return NotFound($"Performer id={performerId} is not assigned to event id={id}.");
 
                 // 7. remove relation
-                _eventRepository.RemoveEventPerformer(existingRelation);
+                _eventPerformerRepository.RemoveEventPerformer(existingRelation);
 
                 // 8. save changes
-                _eventRepository.SaveChanges();
+                _eventPerformerRepository.SaveChanges();
 
                 // 9. return success response
                 return Ok($"Performer id={performerId} was deleted from Event id={eventById.Id}.");

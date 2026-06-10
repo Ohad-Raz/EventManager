@@ -10,6 +10,7 @@ namespace EventManager.DAL.Repositories
         User? GetUserWithRoleByUsername(string username);
         User? GetUserByUsername(string? username);
         User? GetUserById(int id);
+        List<User> GetAllUsers();
         int SaveChanges();
     }
 }

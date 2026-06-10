@@ -25,7 +25,8 @@ namespace EventManager.WebApp.ViewModels
         [Display(Name = "Email")]
         public string Email { get; set; } = null!;
 
-        [StringLength(256)]
+        [StringLength(50, ErrorMessage = "Phone number cannot be longer than 50 characters")]
+        [Phone(ErrorMessage = "Phone number format is invalid")]
         [Display(Name = "Phone")]
         public string? Phone { get; set; }
 

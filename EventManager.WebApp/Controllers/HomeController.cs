@@ -1,6 +1,4 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using EventManager.WebApp.Models;
 
 namespace EventManager.WebApp.Controllers;
 
@@ -21,11 +19,5 @@ public class HomeController : Controller
     public IActionResult Privacy()
     {
         return View();
-    }
-    //do i really need error action
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }

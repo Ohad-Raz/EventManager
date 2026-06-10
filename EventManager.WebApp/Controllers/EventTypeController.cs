@@ -9,19 +9,19 @@ namespace EventManager.WebApp.Controllers
 {
     public class EventTypeController : Controller
     {
-        private readonly IEventRepository _eventRepository;
+        private readonly IEventTypeRepository _eventTypeRepository;
         private readonly IMapper _mapper;
 
-        public EventTypeController(IEventRepository eventRepository, IMapper mapper)
+        public EventTypeController(IEventTypeRepository eventTypeRepository, IMapper mapper)
         {
-            _eventRepository = eventRepository;
+            _eventTypeRepository = eventTypeRepository;
             _mapper = mapper;
         }
 
         // GET: EventType
         public IActionResult Index()
         {
-            List<EventType> eventTypes = _eventRepository.GetAllEventTypes();
+            List<EventType> eventTypes = _eventTypeRepository.GetAllEventTypes();
             List<EventTypeVM> model = _mapper.Map<List<EventTypeVM>>(eventTypes);
             return View(model);
         }
@@ -34,7 +34,7 @@ namespace EventManager.WebApp.Controllers
                 return NotFound();
             }
 
-            EventType? existingEventType = _eventRepository.GetEventTypeById(id.Value);
+            EventType? existingEventType = _eventTypeRepository.GetEventTypeById(id.Value);
             if (existingEventType == null)
             {
                 return NotFound();
@@ -63,7 +63,7 @@ namespace EventManager.WebApp.Controllers
             }
 
             string trimmedName = model.Name.Trim();
-            if (_eventRepository.EventTypeNameExists(trimmedName))
+            if (_eventTypeRepository.EventTypeNameExists(trimmedName))
             {
                 ModelState.AddModelError(nameof(model.Name), $"Event type name '{trimmedName}' already exists.");
                 return View(model);
@@ -72,8 +72,8 @@ namespace EventManager.WebApp.Controllers
             EventType newEventType = _mapper.Map<EventType>(model);
             newEventType.Name = trimmedName;
 
-            _eventRepository.AddEventType(newEventType);
-            _eventRepository.SaveChanges();
+            _eventTypeRepository.AddEventType(newEventType);
+            _eventTypeRepository.SaveChanges();
 
             TempData["newEventTypeName"] = newEventType.Name;
             return RedirectToAction(nameof(Index));
@@ -88,7 +88,7 @@ namespace EventManager.WebApp.Controllers
                 return NotFound();
             }
 
-            EventType? existingEventType = _eventRepository.GetEventTypeById(id.Value);
+            EventType? existingEventType = _eventTypeRepository.GetEventTypeById(id.Value);
             if (existingEventType == null)
             {
                 return NotFound();
@@ -114,22 +114,22 @@ namespace EventManager.WebApp.Controllers
                 return View(model);
             }
 
-            EventType? existingEventType = _eventRepository.GetEventTypeById(id);
+            EventType? existingEventType = _eventTypeRepository.GetEventTypeById(id);
             if (existingEventType == null)
             {
                 return NotFound();
             }
 
             string trimmedName = model.Name.Trim();
-            if (_eventRepository.EventTypeNameExists(trimmedName, id))
+            if (_eventTypeRepository.EventTypeNameExists(trimmedName, id))
             {
                 ModelState.AddModelError(nameof(model.Name), $"Event type name '{trimmedName}' already exists.");
                 return View(model);
             }
 
             existingEventType.Name = trimmedName;
-            _eventRepository.UpdateEventType(existingEventType);
-            _eventRepository.SaveChanges();
+            _eventTypeRepository.UpdateEventType(existingEventType);
+            _eventTypeRepository.SaveChanges();
 
             return RedirectToAction(nameof(Index));
         }
@@ -143,14 +143,14 @@ namespace EventManager.WebApp.Controllers
                 return NotFound();
             }
 
-            EventType? existingEventType = _eventRepository.GetEventTypeById(id.Value);
+            EventType? existingEventType = _eventTypeRepository.GetEventTypeById(id.Value);
             if (existingEventType == null)
             {
                 return NotFound();
             }
 
             EventTypeVM model = _mapper.Map<EventTypeVM>(existingEventType);
-            if (_eventRepository.EventTypeHasEvents(id.Value))
+            if (_eventTypeRepository.EventTypeHasEvents(id.Value))
             {
                 ViewBag.DeleteBlocked = true;
             }
@@ -164,13 +164,13 @@ namespace EventManager.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
-            EventType? existingEventType = _eventRepository.GetEventTypeById(id);
+            EventType? existingEventType = _eventTypeRepository.GetEventTypeById(id);
             if (existingEventType == null)
             {
                 return RedirectToAction(nameof(Index));
             }
 
-            if (_eventRepository.EventTypeHasEvents(id))
+            if (_eventTypeRepository.EventTypeHasEvents(id))
             {
                 ModelState.AddModelError(string.Empty, "Cannot delete this event type because one or more events use it.");
                 EventTypeVM model = _mapper.Map<EventTypeVM>(existingEventType);
@@ -178,8 +178,8 @@ namespace EventManager.WebApp.Controllers
                 return View(model);
             }
 
-            _eventRepository.RemoveEventType(existingEventType);
-            _eventRepository.SaveChanges();
+            _eventTypeRepository.RemoveEventType(existingEventType);
+            _eventTypeRepository.SaveChanges();
 
             return RedirectToAction(nameof(Index));
         }

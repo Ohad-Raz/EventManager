@@ -45,6 +45,8 @@ builder.Services.AddSwaggerGen(option =>
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 builder.Services.AddScoped<IEventRepository, DbEventRepository>();
+builder.Services.AddScoped<IEventTypeRepository, DbEventTypeRepository>();
+builder.Services.AddScoped<IEventPerformerRepository, DbEventPerformerRepository>();
 builder.Services.AddScoped<ILogRepository, DbLogRepository>();
 builder.Services.AddScoped<IUserRepository, DbUserRepository>();
 builder.Services.AddScoped<IPerformerRepository, DbPerformerRepository>();

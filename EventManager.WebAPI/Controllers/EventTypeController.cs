@@ -13,11 +13,11 @@ namespace EventManager.WebAPI.Controllers
     public class EventTypeController : ControllerBase
     {
         private readonly IMapper _mapper;
-        private readonly IEventRepository _eventRepository;
+        private readonly IEventTypeRepository _eventTypeRepository;
 
-        public EventTypeController(IEventRepository eventRepository, IMapper mapper)
+        public EventTypeController(IEventTypeRepository eventTypeRepository, IMapper mapper)
         {
-            _eventRepository = eventRepository;
+            _eventTypeRepository = eventTypeRepository;
             _mapper = mapper;
         }
 
@@ -30,7 +30,7 @@ namespace EventManager.WebAPI.Controllers
         {
             try
             {
-                List<EventType> eventTypes = _eventRepository.GetAllEventTypes();
+                List<EventType> eventTypes = _eventTypeRepository.GetAllEventTypes();
                 List<EventTypeDto> result = _mapper.Map<List<EventTypeDto>>(eventTypes);
                 return Ok(result);
             }
@@ -49,7 +49,7 @@ namespace EventManager.WebAPI.Controllers
         {
             try
             {
-                EventType? eventType = _eventRepository.GetEventTypeById(id);
+                EventType? eventType = _eventTypeRepository.GetEventTypeById(id);
                 if (eventType == null)
                     return NotFound($"EventType with id={id} was not found.");
 
@@ -76,15 +76,14 @@ namespace EventManager.WebAPI.Controllers
                     return BadRequest(ModelState);
 
                 string trimmedName = eventTypeDto.Name.Trim();
-                // Prevent duplicate event type names.
-                if (_eventRepository.EventTypeNameExists(trimmedName))
+                if (_eventTypeRepository.EventTypeNameExists(trimmedName))
                     return BadRequest($"EventType name {trimmedName} already exists.");
 
                 EventType newEventType = _mapper.Map<EventType>(eventTypeDto);
                 newEventType.Name = trimmedName;
 
-                _eventRepository.AddEventType(newEventType);
-                _eventRepository.SaveChanges();
+                _eventTypeRepository.AddEventType(newEventType);
+                _eventTypeRepository.SaveChanges();
 
                 eventTypeDto.Id = newEventType.Id;
                 eventTypeDto.Name = newEventType.Name;
@@ -109,17 +108,16 @@ namespace EventManager.WebAPI.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                EventType? existingEventType = _eventRepository.GetEventTypeById(id);
+                EventType? existingEventType = _eventTypeRepository.GetEventTypeById(id);
                 if (existingEventType == null)
                     return NotFound($"EventType with id={id} was not found.");
 
                 string trimmedName = eventTypeDto.Name.Trim();
-                // Prevent duplicate event type names on update.
-                if (_eventRepository.EventTypeNameExists(trimmedName, id))
+                if (_eventTypeRepository.EventTypeNameExists(trimmedName, id))
                     return BadRequest($"EventType name {trimmedName} already exists.");
 
                 existingEventType.Name = trimmedName;
-                _eventRepository.SaveChanges();
+                _eventTypeRepository.SaveChanges();
 
                 eventTypeDto.Id = existingEventType.Id;
                 eventTypeDto.Name = existingEventType.Name;
@@ -141,16 +139,15 @@ namespace EventManager.WebAPI.Controllers
         {
             try
             {
-                EventType? existingEventType = _eventRepository.GetEventTypeById(id);
+                EventType? existingEventType = _eventTypeRepository.GetEventTypeById(id);
                 if (existingEventType == null)
                     return NotFound($"EventType with id={id} was not found.");
 
-                // Block delete when active events still reference this type.
-                if (_eventRepository.EventTypeHasEvents(id))
+                if (_eventTypeRepository.EventTypeHasEvents(id))
                     return BadRequest($"EventType with id={id} cannot be deleted because events use it.");
 
-                _eventRepository.RemoveEventType(existingEventType);
-                _eventRepository.SaveChanges();
+                _eventTypeRepository.RemoveEventType(existingEventType);
+                _eventTypeRepository.SaveChanges();
                 return Ok($"EventType with id={id} has been deleted.");
             }
             catch (Exception ex)

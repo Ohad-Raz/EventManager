@@ -57,6 +57,12 @@ namespace EventManager.DAL.Repositories
             return _context.Users.FirstOrDefault(x => x.Id == id);
         }
 
+        // Returns all users for dropdowns.
+        public List<User> GetAllUsers()
+        {
+            return _context.Users.ToList();
+        }
+
         // Saves pending database changes.
         public int SaveChanges()
         {

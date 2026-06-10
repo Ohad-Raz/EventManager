@@ -29,7 +29,7 @@ namespace EventManager.WebAPI.Dtos
         public string Email { get; set; } = null!;
 
         [StringLength(50, ErrorMessage = "Phone number cannot be longer than 50 characters")]
-        [Phone(ErrorMessage = "Provide a valid phone number")]
+        [Phone(ErrorMessage = "Phone number format is invalid")]
         public string? Phone { get; set; }
     }
 }

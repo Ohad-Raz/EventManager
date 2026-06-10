@@ -14,6 +14,8 @@ builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 builder.Services.AddDbContext<EventManagerDbContext>(options => options.UseSqlServer("name=ConnectionStrings:DefaultConn"));
 
 builder.Services.AddScoped<IEventRepository, DbEventRepository>();
+builder.Services.AddScoped<IEventTypeRepository, DbEventTypeRepository>();
+builder.Services.AddScoped<IEventPerformerRepository, DbEventPerformerRepository>();
 builder.Services.AddScoped<ILogRepository, DbLogRepository>();
 builder.Services.AddScoped<IUserRepository, DbUserRepository>();
 builder.Services.AddScoped<IPerformerRepository, DbPerformerRepository>();
@@ -45,7 +47,6 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }

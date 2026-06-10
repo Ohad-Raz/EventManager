@@ -211,7 +211,7 @@ namespace EventManager.WebApp.Controllers
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult UpdateProfile(ProfileVM model)
+        public IActionResult UpdateProfile(UpdateProfileVM model)
         {
             string? username = User.Identity?.Name;
             if (string.IsNullOrEmpty(username))

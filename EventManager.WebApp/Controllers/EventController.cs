@@ -15,12 +15,27 @@ namespace EventManager.WebApp.Controllers
     public class EventController : Controller
     {
         private readonly IEventRepository _eventRepository;
+        private readonly IEventTypeRepository _eventTypeRepository;
+        private readonly IEventPerformerRepository _eventPerformerRepository;
+        private readonly IPerformerRepository _performerRepository;
+        private readonly IUserRepository _userRepository;
         private readonly IRegistrationRepository _registrationRepository;
         private readonly IMapper _mapper;
 
-        public EventController(IEventRepository eventRepository, IRegistrationRepository registrationRepository, IMapper mapper)
+        public EventController(
+            IEventRepository eventRepository,
+            IEventTypeRepository eventTypeRepository,
+            IEventPerformerRepository eventPerformerRepository,
+            IPerformerRepository performerRepository,
+            IUserRepository userRepository,
+            IRegistrationRepository registrationRepository,
+            IMapper mapper)
         {
             _eventRepository = eventRepository;
+            _eventTypeRepository = eventTypeRepository;
+            _eventPerformerRepository = eventPerformerRepository;
+            _performerRepository = performerRepository;
+            _userRepository = userRepository;
             _registrationRepository = registrationRepository;
             _mapper = mapper;
         }
@@ -75,7 +90,7 @@ namespace EventManager.WebApp.Controllers
             // 5. for admins, load performers available to assign
             if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
             {
-                List<Performer> unassignedPerformers = _eventRepository.GetUnassignedPerformersForEvent(id.Value);
+                List<Performer> unassignedPerformers = _eventPerformerRepository.GetUnassignedPerformersForEvent(id.Value);
                 ViewBag.AllPerformersAssigned = unassignedPerformers.Count == 0;
                 ViewBag.AvailablePerformerItems = unassignedPerformers
                     .Select(p => new SelectListItem { Value = p.Id.ToString(), Text = p.Name })
@@ -319,7 +334,7 @@ namespace EventManager.WebApp.Controllers
 
             if (eventTypeListItemsJson == null)
             {
-                eventTypeListItems = _eventRepository.GetAllEventTypes()
+                eventTypeListItems = _eventTypeRepository.GetAllEventTypes()
                     .ConvertAll(x => new SelectListItem
                     {
                         Text = x.Name,
@@ -527,14 +542,14 @@ namespace EventManager.WebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            Performer? performer = _eventRepository.GetPerformerById(performerId);
+            Performer? performer = _performerRepository.GetPerformerById(performerId);
             if (performer == null)
             {
                 TempData["PerformerError"] = "Performer not found.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            if (_eventRepository.EventPerformerRelationExists(id, performerId))
+            if (_eventPerformerRepository.EventPerformerRelationExists(id, performerId))
             {
                 TempData["PerformerError"] = "This performer is already assigned to the event.";
                 return RedirectToAction(nameof(Details), new { id });
@@ -546,8 +561,8 @@ namespace EventManager.WebApp.Controllers
                 PerformerId = performerId
             };
 
-            _eventRepository.AddEventPerformer(eventPerformer);
-            _eventRepository.SaveChanges();
+            _eventPerformerRepository.AddEventPerformer(eventPerformer);
+            _eventPerformerRepository.SaveChanges();
 
             TempData["PerformerSuccess"] = $"{performer.Name} was assigned to the event.";
             return RedirectToAction(nameof(Details), new { id });
@@ -566,22 +581,22 @@ namespace EventManager.WebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            Performer? performer = _eventRepository.GetPerformerById(performerId);
+            Performer? performer = _performerRepository.GetPerformerById(performerId);
             if (performer == null)
             {
                 TempData["PerformerError"] = "Performer not found.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            EventPerformer? existingRelation = _eventRepository.GetEventPerformerRelation(id, performerId);
+            EventPerformer? existingRelation = _eventPerformerRepository.GetEventPerformerRelation(id, performerId);
             if (existingRelation == null)
             {
                 TempData["PerformerError"] = "This performer is not assigned to the event.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            _eventRepository.RemoveEventPerformer(existingRelation);
-            _eventRepository.SaveChanges();
+            _eventPerformerRepository.RemoveEventPerformer(existingRelation);
+            _eventPerformerRepository.SaveChanges();
 
             TempData["PerformerSuccess"] = $"{performer.Name} was removed from the event.";
             return RedirectToAction(nameof(Details), new { id });
@@ -635,7 +650,7 @@ namespace EventManager.WebApp.Controllers
         // Returns fallback CreatedById using first available user.
         private int? GetFallbackCreatedById()
         {
-            List<User> users = _eventRepository.GetAllUsers();
+            List<User> users = _userRepository.GetAllUsers();
             User? fallbackUser = users.FirstOrDefault();
             return fallbackUser?.Id;
         }
@@ -644,8 +659,8 @@ namespace EventManager.WebApp.Controllers
         private void LoadEventDropdowns(int? selectedCreatedById = null, int? selectedEventTypeId = null, int? selectedImageId = null)
         {
             // 1. load dropdown source data from repository
-            List<User> users = _eventRepository.GetAllUsers();
-            List<EventType> eventTypes = _eventRepository.GetAllEventTypes();
+            List<User> users = _userRepository.GetAllUsers();
+            List<EventType> eventTypes = _eventTypeRepository.GetAllEventTypes();
             List<Image> images = _eventRepository.GetAllImages();
 
             // 2. set SelectList values for scaffolded form dropdowns

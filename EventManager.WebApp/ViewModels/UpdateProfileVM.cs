@@ -2,11 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace EventManager.WebApp.ViewModels
 {
-    public class ProfileVM
+    public class UpdateProfileVM
     {
-        [Display(Name = "Username")]
-        public string Username { get; set; } = null!;
-
         [Required]
         [StringLength(256)]
         [Display(Name = "First Name")]
@@ -27,8 +24,5 @@ namespace EventManager.WebApp.ViewModels
         [Phone(ErrorMessage = "Phone number format is invalid")]
         [Display(Name = "Phone")]
         public string? Phone { get; set; }
-
-        [Display(Name = "Role")]
-        public string RoleName { get; set; } = null!;
     }
 }
