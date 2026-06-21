@@ -71,7 +71,7 @@ namespace EventManager.WebAPI.Controllers
                 // Return generated Id to the client
                 userDto.Id = user.Id;
 
-                // Never send password back in response
+                // Never send password back in response:)
                 userDto.Password = string.Empty;
 
                 return Ok(userDto);
@@ -156,13 +156,6 @@ namespace EventManager.WebAPI.Controllers
 
                 if (existingUser == null)
                     return BadRequest(genericLoginFail);
-
-                // Check new password rules
-                if (!changePassDto.NewPasswordsMatch())
-                    return BadRequest("Passwords do not match.");
-
-                if (!changePassDto.IsDifferentFromCurrent())
-                    return BadRequest("New password must be different from current password.");
 
                 // Verify CURRENT password using existing salt
                 string currentHash = PasswordHashProvider.GetHash(changePassDto.CurrentPassword, existingUser.PwdSalt);

@@ -157,18 +157,16 @@ namespace EventManager.WebAPI.Controllers
                 // 1. validate model state
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
-                if (eventDto.EndTime <= eventDto.StartTime)
-                    return BadRequest("End time must be after start time.");
 
                 // 2. get logged-in username from JWT
-                string? username = HttpContext.User.Identity?.Name;
+                string? username = HttpContext.User.Identity?.Name;//
 
                 // 3. if identity is missing, return Unauthorized
                 if (string.IsNullOrEmpty(username))
                     return Unauthorized("User identity is missing.");
 
                 // 4. load data for this request
-                User? existingUser = _userRepository.GetUserByUsername(username);
+                User? existingUser = _userRepository.GetUserByUsername(username);//getting for createdby? maybe can use context instead to prevent round trip
 
                 // 5. if user not found, return NotFound
                 if (existingUser == null)
@@ -230,8 +228,6 @@ namespace EventManager.WebAPI.Controllers
                 // 1. validate model state
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
-                if (eventDto.EndTime <= eventDto.StartTime)
-                    return BadRequest("End time must be after start time.");
 
                 // 2. load data for this request
                 Event? existingEvent = _eventRepository.GetEventById(id);

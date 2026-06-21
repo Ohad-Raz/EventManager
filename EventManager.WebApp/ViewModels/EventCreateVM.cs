@@ -1,3 +1,4 @@
+using EventManager.DAL.Validation;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventManager.WebApp.ViewModels
@@ -19,6 +20,7 @@ namespace EventManager.WebApp.ViewModels
 
         [Required]
         [Display(Name = "End Time")]
+        [DateGreaterThan(nameof(StartTime), ErrorMessage = "End time must be later than start time.")]
         public DateTime EndTime { get; set; }
 
         [Required]

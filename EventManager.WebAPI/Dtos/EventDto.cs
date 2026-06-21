@@ -1,3 +1,4 @@
+using EventManager.DAL.Validation;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventManager.WebAPI.Dtos
@@ -18,6 +19,7 @@ namespace EventManager.WebAPI.Dtos
         public DateTime StartTime { get; set; }
 
         [Required]
+        [DateGreaterThan(nameof(StartTime), ErrorMessage = "End time must be later than start time.")]
         public DateTime EndTime { get; set; }
 
         [Required]
