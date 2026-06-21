@@ -1,3 +1,4 @@
+using AutoMapper;
 using EventManager.DAL.Models;
 using EventManager.DAL.Repositories;
 using EventManager.WebAPI.Security;
@@ -13,11 +14,18 @@ namespace EventManager.WebApp.Controllers
     public class UserController : Controller
     {
         private readonly IUserRepository _userRepository;
+        private readonly IRegistrationRepository _registrationRepository;
+        private readonly IMapper _mapper;
 
         // Repository for user database operations, injected by DI.
-        public UserController(IUserRepository userRepository)
+        public UserController(
+            IUserRepository userRepository,
+            IRegistrationRepository registrationRepository,
+            IMapper mapper)
         {
             _userRepository = userRepository;
+            _registrationRepository = registrationRepository;
+            _mapper = mapper;
         }
 
         // GET: User/Register
@@ -74,7 +82,7 @@ namespace EventManager.WebApp.Controllers
                 // 7. save new user to database
                 _userRepository.AddUser(user);
                 _userRepository.SaveChanges();
-       TempData["RegisterMessage"] = "You have been registered and logged in successfully.";
+                TempData["RegisterMessage"] = "Registration successful. Please log in.";
 
                 return RedirectToAction(nameof(Login));
             }
@@ -155,6 +163,17 @@ namespace EventManager.WebApp.Controllers
                     return LocalRedirect(model.ReturnUrl);
 
                 TempData["LoginMessage"] = "You have been logged in successfully.";
+
+                if (roleName == "Admin")
+                {
+                    return RedirectToAction("Search", "Event");
+                }
+
+                if (roleName == "User")
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+
                 return RedirectToAction("Index", "Home");
             }
             catch (Exception ex)
@@ -187,16 +206,7 @@ namespace EventManager.WebApp.Controllers
             var username = HttpContext.User.Identity.Name;
 
             var userDb = _userRepository.GetUserWithRoleByUsername(username);
-            var userVm = new ProfileVM
-            {
-                Id = userDb.Id,
-                Username = userDb.Username,
-                FirstName = userDb.FirstName,
-                LastName = userDb.LastName,
-                Email = userDb.Email,
-                Phone = userDb.Phone,
-                RoleName = userDb.Role.Name,
-            };
+            ProfileVM userVm = _mapper.Map<ProfileVM>(userDb);
 
             return View(userVm);
         }
@@ -210,16 +220,7 @@ namespace EventManager.WebApp.Controllers
             if (userDb == null || userDb.Id != id)
                 return Forbid();
 
-            var userVm = new ProfileVM
-            {
-                Id = userDb.Id,
-                Username = userDb.Username,
-                FirstName = userDb.FirstName,
-                LastName = userDb.LastName,
-                Email = userDb.Email,
-                Phone = userDb.Phone,
-                RoleName = userDb.Role.Name,
-            };
+            ProfileVM userVm = _mapper.Map<ProfileVM>(userDb);
 
             return View(userVm);
         }
@@ -234,10 +235,7 @@ namespace EventManager.WebApp.Controllers
             if (userDb == null || userDb.Id != id)
                 return Forbid();
 
-            userDb.FirstName = userVm.FirstName;
-            userDb.LastName = userVm.LastName;
-            userDb.Email = userVm.Email;
-            userDb.Phone = userVm.Phone;
+            _mapper.Map(userVm, userDb);
 
             _userRepository.SaveChanges();
 
@@ -252,13 +250,7 @@ namespace EventManager.WebApp.Controllers
             if (userDb == null || userDb.Id != id)
                 return Json(new { error = "Forbidden" });
 
-            return Json(new
-            {
-                userDb.FirstName,
-                userDb.LastName,
-                userDb.Email,
-                userDb.Phone,
-            });
+            return Json(_mapper.Map<UpdateProfileVM>(userDb));
         }
 
         [Authorize]
@@ -274,14 +266,20 @@ namespace EventManager.WebApp.Controllers
             if (_userRepository.EmailExists(userVm.Email, userDb.Id))
                 return BadRequest("Email is already in use.");
 
-            userDb.FirstName = userVm.FirstName;
-            userDb.LastName = userVm.LastName;
-            userDb.Email = userVm.Email;
-            userDb.Phone = userVm.Phone;
+            _mapper.Map(userVm, userDb);
 
             _userRepository.SaveChanges();
 
             return Ok();
+        }
+
+        [Authorize(Roles = "Admin")]
+        public IActionResult RegistrationsOverview()
+        {
+            List<Registration> registrations = _registrationRepository.GetAllRegistrationsWithDetails();
+            List<AdminUserRegistrationVM> model = _mapper.Map<List<AdminUserRegistrationVM>>(registrations);
+
+            return View(model);
         }
     }
 }

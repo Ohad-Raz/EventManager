@@ -142,7 +142,7 @@ namespace EventManager.WebApp.Controllers
             _eventRepository.SaveChanges();
 
             TempData["newEventName"] = newEvent.Name;
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Search));
         }
 
         //exercise 11 example:
@@ -437,7 +437,7 @@ namespace EventManager.WebApp.Controllers
                 throw;
             }
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Search));
         }
 
         // POST: Event/Register/5
@@ -653,7 +653,7 @@ namespace EventManager.WebApp.Controllers
                 _eventRepository.RemoveEvent(existingEvent);
                 _eventRepository.SaveChanges();
             }
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Search));
         }
 
         // Returns true when event exists and is not soft-deleted.

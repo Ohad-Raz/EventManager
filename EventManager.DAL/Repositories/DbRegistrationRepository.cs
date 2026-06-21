@@ -63,6 +63,7 @@ namespace EventManager.DAL.Repositories
             return _context.Registrations
                 .Include(x => x.User)
                 .Include(x => x.Event)
+                     .ThenInclude(x => x.EventType)
                 .ToList();
         }
 

@@ -42,6 +42,28 @@ namespace EventManager.WebApp.Mapping
             CreateMap<PerformerVM, Performer>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.EventPerformers, opt => opt.Ignore());
+
+            CreateMap<Registration, AdminUserRegistrationVM>()
+                .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.User.Username))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
+                .ForMember(dest => dest.EventName, opt => opt.MapFrom(src => src.Event.Name))
+                .ForMember(dest => dest.EventTypeName, opt => opt.MapFrom(src => src.Event.EventType.Name));
+
+            CreateMap<User, ProfileVM>()
+                .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name));
+
+            CreateMap<User, UpdateProfileVM>();
+
+            CreateMap<UpdateProfileVM, User>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Username, opt => opt.Ignore())
+                .ForMember(dest => dest.PwdHash, opt => opt.Ignore())
+                .ForMember(dest => dest.PwdSalt, opt => opt.Ignore())
+                .ForMember(dest => dest.RoleId, opt => opt.Ignore())
+                .ForMember(dest => dest.Role, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.Events, opt => opt.Ignore())
+                .ForMember(dest => dest.Registrations, opt => opt.Ignore());
         }
     }
 }

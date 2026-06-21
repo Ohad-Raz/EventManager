@@ -1,0 +1,54 @@
+﻿@model List<EventManager.WebApp.ViewModels.AdminUserRegistrationVM>
+
+@{
+    ViewData["Title"] = "Users and Registrations";
+}
+
+<h1>Users and Registrations</h1>
+
+<p class="text-muted">
+    This page shows users and their event registration actions.
+</p>
+ @if (!Model.Any())
+        {
+        <p class="text-muted">No registrations found.</p>
+        }
+        else
+        {
+            
+        <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Event</th>
+            <th>Event Type</th>
+            <th>Registered At</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+       
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Username</td>
+                <td>@item.Email</td>
+                <td>@item.EventName</td>
+                <td>@item.EventTypeName</td>
+                <td>@item.RegisteredAt</td>
+                <td>
+                    @if (item.IsActive)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Cancelled</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+        }

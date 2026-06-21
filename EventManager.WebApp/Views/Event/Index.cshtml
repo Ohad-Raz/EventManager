@@ -6,12 +6,6 @@
 }
 
 <h1>Index</h1>
-@if (TempData.ContainsKey("newEventName"))
-{
-    <div class="alert alert-primary" role="alert">
-        A new event @TempData["newEventName"] has been created.
-    </div>
-}
 @if (isAdmin)
 {
     <p>

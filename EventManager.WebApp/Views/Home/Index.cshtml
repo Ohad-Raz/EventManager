@@ -1,7 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
-@if (TempData.ContainsKey("LogoutMessage"))
+@* @if (TempData.ContainsKey("LogoutMessage"))
 {
     <div class="alert alert-primary" role="alert">
        @TempData["LogoutMessage"]
@@ -18,8 +18,101 @@
     <div class="alert alert-primary" role="alert">
        @TempData["RegisterMessage"]
     </div>
-}
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+} *@
+<div class="container py-5">
+    <div class="row align-items-center mb-5">
+        <div class="col-md-7">
+            <h1 class="display-5 fw-bold mb-3">Event Manager</h1>
+            <p class="lead text-muted mb-4">
+                Discover events, view event details, and register for activities in one simple event management system.
+            </p>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-controller="Event" asp-action="Search" class="btn btn-primary btn-lg">Search Events</a>
+
+                @if (User.Identity?.IsAuthenticated != true)
+                {
+                    <a asp-controller="User" asp-action="Login" class="btn btn-outline-primary btn-lg">Login</a>
+                    <a asp-controller="User" asp-action="Register" class="btn btn-outline-secondary btn-lg">Register</a>
+                }
+                else if (User.IsInRole("Admin"))
+                {
+                    <a asp-controller="Event" asp-action="Search" class="btn btn-outline-primary btn-lg">Manage Events</a>
+                }
+                else if (User.IsInRole("User"))
+                {
+                    <a asp-controller="User" asp-action="ProfileDetails" class="btn btn-outline-primary btn-lg">My Profile</a>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-5 mt-4 mt-md-0">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h4 class="card-title mb-3">What you can do</h4>
+
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">Search events by name, description, location, or event type</li>
+                        <li class="mb-2">View full event details and available information</li>
+                        <li class="mb-2">Register for events as a user</li>
+                        <li class="mb-2">Manage events as an administrator</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Browse Events</h5>
+                    <p class="card-text text-muted">
+                        Use the event search page to filter, sort, and page through available events.
+                    </p>
+                    <a asp-controller="Event" asp-action="Search" class="btn btn-sm btn-outline-primary">Open Search</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">User Access</h5>
+                    <p class="card-text text-muted">
+                        Registered users can sign in, update their profile, and register for events.
+                    </p>
+
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a asp-controller="User" asp-action="ProfileDetails" class="btn btn-sm btn-outline-primary">Open Profile</a>
+                    }
+                    else
+                    {
+                        <a asp-controller="User" asp-action="Login" class="btn btn-sm btn-outline-primary">Login</a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Administration</h5>
+                    <p class="card-text text-muted">
+                        Administrators can manage events, event types, performers, and registrations.
+                    </p>
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Event" asp-action="Search" class="btn btn-sm btn-outline-primary">Manage Events</a>
+                    }
+                    else
+                    {
+                        <span class="text-muted small">Admin access required</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

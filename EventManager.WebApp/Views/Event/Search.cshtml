@@ -42,6 +42,12 @@
         </div>
     </div>
 </form>
+@if (User.IsInRole("Admin"))
+{
+    <p>
+        <a asp-action="Create" class="btn btn-primary">Create New</a>
+    </p>
+}
 <div id="searchPartialPlaceholder">
     <partial name="_SearchPartial" model="Model" />
 </div>

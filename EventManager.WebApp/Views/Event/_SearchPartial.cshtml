@@ -24,6 +24,12 @@
                 <td>@item.Capacity</td>
                 <td>
                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Details</a>
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                    }
                 </td>
             </tr>
         }
@@ -42,13 +48,29 @@
                asp-route-OrderBy="@Model.OrderBy"
                asp-route-Size="@Model.Size"
                asp-route-Page="@(Model.Page - 1)"
-               class="btn btn-outline-primary page-link">
-                Previous
-            </a>
+               class="btn btn-outline-primary page-link">Previous</a>
         }
         else
         {
             <button type="button" class="btn btn-outline-secondary" disabled>Previous</button>
+        }
+
+        @for (int i = 1; i <= Model.LastPage; i++)
+        {
+            if (i == Model.Page)
+            {
+                <button type="button" class="btn btn-primary" disabled>@i</button>
+            }
+            else
+            {
+                <a asp-action="Search"
+                   asp-route-Q="@Model.Q"
+                   asp-route-EventTypeId="@Model.EventTypeId"
+                   asp-route-OrderBy="@Model.OrderBy"
+                   asp-route-Size="@Model.Size"
+                   asp-route-Page="@i"
+                   class="btn btn-outline-primary page-link">@i</a>
+            }
         }
 
         @if (Model.HasNextPage)
@@ -59,9 +81,7 @@
                asp-route-OrderBy="@Model.OrderBy"
                asp-route-Size="@Model.Size"
                asp-route-Page="@(Model.Page + 1)"
-               class="btn btn-outline-primary page-link">
-                Next
-            </a>
+               class="btn btn-outline-primary page-link">Next</a>
         }
         else
         {
