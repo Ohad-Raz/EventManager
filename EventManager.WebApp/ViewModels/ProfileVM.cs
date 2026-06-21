@@ -3,7 +3,11 @@ using System.ComponentModel.DataAnnotations;
 namespace EventManager.WebApp.ViewModels
 {
     public class ProfileVM
+
     {
+        [Display(Name = "Id")]
+        public int Id { get; set; }
+
         [Display(Name = "Username")]
         public string Username { get; set; } = null!;
 

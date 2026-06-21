@@ -1,11 +1,12 @@
-using System.Security.Claims;
 using EventManager.DAL.Models;
 using EventManager.DAL.Repositories;
 using EventManager.WebAPI.Security;
 using EventManager.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace EventManager.WebApp.Controllers
 {
@@ -178,6 +179,109 @@ namespace EventManager.WebApp.Controllers
         public IActionResult Forbidden()
         {
             return View();
+        }
+
+        [Authorize]
+        public IActionResult ProfileDetails()
+        {
+            var username = HttpContext.User.Identity.Name;
+
+            var userDb = _userRepository.GetUserWithRoleByUsername(username);
+            var userVm = new ProfileVM
+            {
+                Id = userDb.Id,
+                Username = userDb.Username,
+                FirstName = userDb.FirstName,
+                LastName = userDb.LastName,
+                Email = userDb.Email,
+                Phone = userDb.Phone,
+                RoleName = userDb.Role.Name,
+            };
+
+            return View(userVm);
+        }
+        [Authorize]
+        public IActionResult ProfileEdit(int id)
+        {
+            var username = HttpContext.User.Identity.Name;
+            var userDb = _userRepository.GetUserWithRoleByUsername(username);
+
+            // Event Manager: only allow editing own profile
+            if (userDb == null || userDb.Id != id)
+                return Forbid();
+
+            var userVm = new ProfileVM
+            {
+                Id = userDb.Id,
+                Username = userDb.Username,
+                FirstName = userDb.FirstName,
+                LastName = userDb.LastName,
+                Email = userDb.Email,
+                Phone = userDb.Phone,
+                RoleName = userDb.Role.Name,
+            };
+
+            return View(userVm);
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult ProfileEdit(int id, UpdateProfileVM userVm)
+        {
+            var username = HttpContext.User.Identity.Name;//is this also redundent?
+            var userDb = _userRepository.GetUserWithRoleByUsername(username);
+
+            if (userDb == null || userDb.Id != id)
+                return Forbid();
+
+            userDb.FirstName = userVm.FirstName;
+            userDb.LastName = userVm.LastName;
+            userDb.Email = userVm.Email;
+            userDb.Phone = userVm.Phone;
+
+            _userRepository.SaveChanges();
+
+            return RedirectToAction("ProfileDetails");
+        }
+        [Authorize]
+        public JsonResult GetProfileData(int id)
+        {
+            var username = HttpContext.User.Identity.Name;
+            var userDb = _userRepository.GetUserWithRoleByUsername(username);
+
+            if (userDb == null || userDb.Id != id)
+                return Json(new { error = "Forbidden" });
+
+            return Json(new
+            {
+                userDb.FirstName,
+                userDb.LastName,
+                userDb.Email,
+                userDb.Phone,
+            });
+        }
+
+        [Authorize]
+        [HttpPut]
+        public ActionResult SetProfileData(int id, [FromBody] UpdateProfileVM userVm)
+        {
+            var username = HttpContext.User.Identity.Name;
+            var userDb = _userRepository.GetUserWithRoleByUsername(username);
+
+            if (userDb == null || userDb.Id != id)
+                return Forbid();
+
+            if (_userRepository.EmailExists(userVm.Email, userDb.Id))
+                return BadRequest("Email is already in use.");
+
+            userDb.FirstName = userVm.FirstName;
+            userDb.LastName = userVm.LastName;
+            userDb.Email = userVm.Email;
+            userDb.Phone = userVm.Phone;
+
+            _userRepository.SaveChanges();
+
+            return Ok();
         }
     }
 }

@@ -1,0 +1,152 @@
+@model EventManager.WebApp.ViewModels.ProfileVM
+
+@{
+    ViewData["Title"] = "Profile Details";
+}
+
+<h1>Profile Details</h1>
+
+<div>
+    <h4>@Model.Username</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Username)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Username)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.FirstName)
+        </dt>
+        <dd class="col-sm-10" id="FirstName">
+            @Html.DisplayFor(model => model.FirstName)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.LastName)
+        </dt>
+        <dd class="col-sm-10" id="LastName">
+            @Html.DisplayFor(model => model.LastName)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Email)
+        </dt>
+        <dd class="col-sm-10" id="Email">
+            @Html.DisplayFor(model => model.Email)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Phone)
+        </dt>
+        <dd class="col-sm-10" id="Phone">
+            @Html.DisplayFor(model => model.Phone)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.RoleName)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.RoleName)
+        </dd>
+    </dl>
+</div>
+
+<div class="form-group mt-3 d-flex gap-2 align-items-center flex-wrap">
+    <a href="#" id="ajaxEdit" class="btn btn-primary">Edit Profile</a>
+    <button id="ajaxUpdate" type="button" class="btn btn-outline-primary">Ajax Refresh Data</button>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary">Back to Home</a>
+</div>
+
+<div class="modal fade" id="AjaxEditModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update User Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="profileForm">
+                    <div class="mb-3">
+                        <label for="FirstNameInput" class="form-label">First name</label>
+                        <input id="FirstNameInput" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="LastNameInput" class="form-label">Last name</label>
+                        <input id="LastNameInput" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="EmailInput" class="form-label">E-mail</label>
+                        <input type="email" id="EmailInput" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="PhoneInput" class="form-label">Phone</label>
+                        <input type="tel" id="PhoneInput" class="form-control">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="SaveProfileButton" type="button" class="btn btn-primary">Save profile</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const modelId = "@Model.Id";
+
+        const ajaxEditModalEl = $("#AjaxEditModal")[0];
+        const ajaxEditModal = new bootstrap.Modal(ajaxEditModalEl);
+
+        $("#ajaxUpdate").click(() => {
+            $.ajax({
+                url: `/User/GetProfileData/${modelId}`,
+                method: "GET"
+            })
+                .done((data) => {
+                    $("#FirstName").text(data.firstName);
+                    $("#LastName").text(data.lastName);
+                    $("#Email").text(data.email);
+                    $("#Phone").text(data.phone);
+                });
+        });
+
+        $("#ajaxEdit").click((e) => {
+            e.preventDefault();
+
+            const firstName = $("#FirstName").text().trim();
+            const lastName = $("#LastName").text().trim();
+            const email = $("#Email").text().trim();
+            const phone = $("#Phone").text().trim();
+
+            $("#FirstNameInput").val(firstName);
+            $("#LastNameInput").val(lastName);
+            $("#EmailInput").val(email);
+            $("#PhoneInput").val(phone);
+
+            ajaxEditModal.show();
+        });
+
+        $("#SaveProfileButton").click(() => {
+            const profile = {
+                firstName: $("#FirstNameInput").val(),
+                lastName: $("#LastNameInput").val(),
+                email: $("#EmailInput").val(),
+                phone: $("#PhoneInput").val(),
+            };
+
+            $.ajax({
+                url: `/User/SetProfileData/${modelId}`,
+                method: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(profile)
+            })
+                .done(() => {
+                    ajaxEditModal.hide();
+                    $("#ajaxUpdate").trigger("click");
+                })
+                .fail(() => {
+                    alert("ERROR: Could not update profile");
+                });
+        });
+    </script>
+}

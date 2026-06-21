@@ -220,98 +220,113 @@ namespace EventManager.WebApp.Controllers
         {
             try
             {
-                IQueryable<Event> events = _eventRepository
-                    .GetAllEventsWithDetails()
-                    .AsQueryable();
-                //ex11
-                if (string.IsNullOrEmpty(searchVm.Q) && string.IsNullOrEmpty(searchVm.Submit))
-                {
-                    searchVm.Q = Request.Cookies["eventQuery"];
-                }
-                var option = new CookieOptions
-                {
-                    Expires = DateTime.Now.AddMinutes(15)
-                };
-
-                Response.Cookies.Append("eventQuery", searchVm.Q ?? "", option);
-                //end
-
-                if (!string.IsNullOrEmpty(searchVm.Q))
-                {
-                    events = events.Where(x =>
-                        x.Name.Contains(searchVm.Q) ||
-                        x.Description.Contains(searchVm.Q) ||
-                        x.Location.Contains(searchVm.Q));
-                }
-
-                if (searchVm.EventTypeId.HasValue)
-                {
-                    events = events.Where(x => x.EventTypeId == searchVm.EventTypeId.Value);
-                }
-
-                switch ((searchVm.OrderBy ?? "").ToLower())
-                {
-                    case "name":
-                        events = events.OrderBy(x => x.Name);
-                        break;
-                    case "starttime":
-                        events = events.OrderBy(x => x.StartTime);
-                        break;
-                    case "capacity":
-                        events = events.OrderBy(x => x.Capacity);
-                        break;
-                    case "location":
-                        events = events.OrderBy(x => x.Location);
-                        break;
-                    case "eventtype":
-                        events = events.OrderBy(x => x.EventType.Name);
-                        break;
-                    default:
-                        events = events.OrderBy(x => x.Id);
-                        break;
-                }
-
-                // New search from the form resets to page 1.
-                if (!string.IsNullOrEmpty(searchVm.Submit))
-                {
-                    searchVm.Page = 1;
-                }
-
-                if (searchVm.Size < 1)
-                {
-                    searchVm.Size = 10;
-                }
-
-                int totalCount = events.Count();
-                int lastPage = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)searchVm.Size);
-
-                if (searchVm.Page < 1)
-                {
-                    searchVm.Page = 1;
-                }
-
-                if (searchVm.Page > lastPage)
-                {
-                    searchVm.Page = lastPage;
-                }
-
-                searchVm.LastPage = lastPage;
-                searchVm.HasPreviousPage = searchVm.Page > 1;
-                searchVm.HasNextPage = searchVm.Page < lastPage;
-
-                searchVm.Events = events
-                    .Skip((searchVm.Page - 1) * searchVm.Size)
-                    .Take(searchVm.Size)
-                    .Select(x => _mapper.Map<EventVM>(x))
-                    .ToList();
-
-                searchVm.EventTypeItems = GetEventTypeListItems();
+                PrepareSearchViewModel(searchVm);
                 return View(searchVm);
             }
             catch
             {
                 throw;
             }
+        }
+        public ActionResult SearchPartial(EventSearchVM searchVm)
+        {
+            try
+            {
+                PrepareSearchViewModel(searchVm);
+                return PartialView("_SearchPartial", searchVm);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        private void PrepareSearchViewModel(EventSearchVM searchVm)
+        {
+            IQueryable<Event> events = _eventRepository
+                .GetAllEventsWithDetails()
+                .AsQueryable();
+
+            if (string.IsNullOrEmpty(searchVm.Q) && string.IsNullOrEmpty(searchVm.Submit))
+            {
+                searchVm.Q = Request.Cookies["eventQuery"];
+            }
+
+            var option = new CookieOptions
+            {
+                Expires = DateTime.Now.AddMinutes(15)
+            };
+
+            Response.Cookies.Append("eventQuery", searchVm.Q ?? "", option);
+
+            if (!string.IsNullOrEmpty(searchVm.Q))
+            {
+                events = events.Where(x =>
+                    x.Name.Contains(searchVm.Q) ||
+                    x.Description.Contains(searchVm.Q) ||
+                    x.Location.Contains(searchVm.Q));
+            }
+
+            if (searchVm.EventTypeId.HasValue)
+            {
+                events = events.Where(x => x.EventTypeId == searchVm.EventTypeId.Value);
+            }
+
+            switch ((searchVm.OrderBy ?? "").ToLower())
+            {
+                case "name":
+                    events = events.OrderBy(x => x.Name);
+                    break;
+                case "starttime":
+                    events = events.OrderBy(x => x.StartTime);
+                    break;
+                case "capacity":
+                    events = events.OrderBy(x => x.Capacity);
+                    break;
+                case "location":
+                    events = events.OrderBy(x => x.Location);
+                    break;
+                case "eventtype":
+                    events = events.OrderBy(x => x.EventType.Name);
+                    break;
+                default:
+                    events = events.OrderBy(x => x.Id);
+                    break;
+            }
+
+            if (!string.IsNullOrEmpty(searchVm.Submit))
+            {
+                searchVm.Page = 1;
+            }
+
+            if (searchVm.Size < 1)
+            {
+                searchVm.Size = 10;
+            }
+
+            int totalCount = events.Count();
+            int lastPage = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)searchVm.Size);
+
+            if (searchVm.Page < 1)
+            {
+                searchVm.Page = 1;
+            }
+
+            if (searchVm.Page > lastPage)
+            {
+                searchVm.Page = lastPage;
+            }
+
+            searchVm.LastPage = lastPage;
+            searchVm.HasPreviousPage = searchVm.Page > 1;
+            searchVm.HasNextPage = searchVm.Page < lastPage;
+
+            searchVm.Events = events
+                .Skip((searchVm.Page - 1) * searchVm.Size)
+                .Take(searchVm.Size)
+                .Select(x => _mapper.Map<EventVM>(x))
+                .ToList();
+
+            searchVm.EventTypeItems = GetEventTypeListItems();
         }
         // For each EventType from the database: use the Id as the dropdown value
         //use the Name as the displayed text
