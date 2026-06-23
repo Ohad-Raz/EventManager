@@ -158,11 +158,12 @@ namespace EventManager.WebAPI.Controllers
                     return BadRequest(ModelState);
 
                 // 2. read user id from JWT nameid claim
+                // The JWT stores the database user id as the raw nameid claim.
                 string? userIdClaim = User.FindFirstValue(JwtRegisteredClaimNames.NameId);
 
                 // 3. if claim is missing or invalid, return Unauthorized
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-                    return Unauthorized("User id claim is missing.");
+                if (!int.TryParse(userIdClaim, out int userId))
+                    return Unauthorized("User id claim is missing or invalid.");
 
                 // 4. validate referenced EventType
                 EventType? existingEventType = _eventTypeRepository.GetEventTypeById(eventDto.EventTypeId);

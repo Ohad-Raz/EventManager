@@ -4,6 +4,8 @@ using EventManager.DAL.Repositories;
 using EventManager.WebAPI.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace EventManager.WebAPI.Controllers
 {
@@ -34,36 +36,28 @@ namespace EventManager.WebAPI.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                // 1. get logged-in username from JWT
-                string? username = HttpContext.User.Identity?.Name;
+                // The JWT stores the database user id as the raw nameid claim.
+                string? userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.NameId);
 
-                // 2. if identity is missing, return Unauthorized
-                if (string.IsNullOrEmpty(username))
-                    return Unauthorized("User identity is missing.");
+                if (!int.TryParse(userIdValue, out int userId))
+                    return Unauthorized("User id claim is missing or invalid.");
 
-                // 3. find logged-in user
-                User? existingUser = _registrationRepository.GetUserByUsername(username);
-
-                // 4. if user not found, return NotFound
-                if (existingUser == null)
-                    return NotFound("User not found.");
-
-                // 5. find target event
+                // 1. find target event
                 Event? existingEvent = _registrationRepository.GetEventById(registrationDto.EventId);
 
-                // 6. if event not found, return NotFound
+                // 2. if event not found, return NotFound
                 if (existingEvent == null)
                     return NotFound("Event not found.");
 
-                // 7. check existing registration for same user and event
+                // 3. check existing registration for same user and event
                 Registration? existingRegistration =
-                    _registrationRepository.GetRegistrationByUserAndEvent(existingUser.Id, existingEvent.Id);
+                    _registrationRepository.GetRegistrationByUserAndEvent(userId, existingEvent.Id);
 
-                // 8. if active registration already exists, stop
+                // 4. if active registration already exists, stop
                 if (existingRegistration != null && existingRegistration.IsActive)
                     return BadRequest("User is already registered to the event.");
 
-                // 9. if cancelled registration exists, reactivate it
+                // 5. if cancelled registration exists, reactivate it
                 if (existingRegistration != null && !existingRegistration.IsActive)
                 {
                     existingRegistration.IsActive = true;
@@ -75,19 +69,19 @@ namespace EventManager.WebAPI.Controllers
 
                     return Ok(registrationDto);
                 }
-                // 10. create new registration entity
+                // 6. create new registration entity
                 Registration registration = new Registration
                 {
                     Name = registrationDto.Name,
-                    UserId = existingUser.Id,
+                    UserId = userId,
                     EventId = existingEvent.Id,
                     IsActive = true
                 };
-                // 11. save to database
+                // 7. save to database
                 _registrationRepository.AddRegistration(registration);
                 _registrationRepository.SaveChanges();
 
-                // 12. return generated Id to client
+                // 8. return generated Id to client
                 registrationDto.Id = registration.Id;
 
                 return Ok(registrationDto);
