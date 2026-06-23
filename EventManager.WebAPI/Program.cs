@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using EventManager.DAL.Models;
 using EventManager.DAL.Repositories;
@@ -14,7 +15,7 @@ builder.Services.AddSwaggerGen(option =>
 {
     option.SwaggerDoc("v1",
         new OpenApiInfo { Title = "Event Manager Web API", Version = "v1" });
-
+    // Configure Swagger to accept JWT Bearer tokens through the Authorize button.
     option.AddSecurityDefinition("Bearer",
         new OpenApiSecurityScheme
         {
@@ -25,7 +26,7 @@ builder.Services.AddSwaggerGen(option =>
             BearerFormat = "JWT",
             Scheme = "Bearer"
         });
-
+    // Apply the Bearer token configuration to protected API endpoints.
     option.AddSecurityRequirement(
         new OpenApiSecurityRequirement
         {
@@ -42,6 +43,7 @@ builder.Services.AddSwaggerGen(option =>
             }
         });
 });
+//Controllers,mapper,repositories-services for DI
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 builder.Services.AddScoped<IEventRepository, DbEventRepository>();
@@ -52,10 +54,11 @@ builder.Services.AddScoped<IUserRepository, DbUserRepository>();
 builder.Services.AddScoped<IPerformerRepository, DbPerformerRepository>();
 builder.Services.AddScoped<IRegistrationRepository, DbRegistrationRepository>();
 builder.Services.AddEndpointsApiExplorer();
-// Configure JWT security services
+// using named connection string from appsettings.json
 builder.Services.AddDbContext<EventManagerDbContext>(options => {
     options.UseSqlServer("name=ConnectionStrings:DefaultConn");
 });
+// Configure JWT security services
 var secureKey = builder.Configuration["JWT:SecureKey"]//solving null possibility 
     ?? throw new InvalidOperationException("JWT secure key is missing.");
 builder.Services
@@ -63,11 +66,16 @@ builder.Services
     .AddJwtBearer(o =>
     {
         var Key = Encoding.UTF8.GetBytes(secureKey);
+        // Keep JWT claim names predictable after token validation.
+        // The API uses unique_name for username, role for authorization, and nameid for the database user id.
+        o.MapInboundClaims = false;
         o.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = false,
             ValidateAudience = false,
-            IssuerSigningKey = new SymmetricSecurityKey(Key)
+            IssuerSigningKey = new SymmetricSecurityKey(Key),
+            NameClaimType = JwtRegisteredClaimNames.UniqueName,
+            RoleClaimType = "role"
         };
     });
 var app = builder.Build();

@@ -9,9 +9,9 @@ namespace EventManager.WebAPI.Security
     {
         /// <summary>
         /// Creates JWT token for authenticated user.
-        /// Can include username and role claims.
+        /// Can include username, user id, and role claims.
         /// </summary>
-        public static string CreateToken(string secureKey, int expiration, string? subject = null, string? role = null)
+        public static string CreateToken(string secureKey, int expiration, string? subject = null, string? role = null, int? userId = null)
         {
             // Convert secret key to byte array
             byte[] tokenKey = Encoding.UTF8.GetBytes(secureKey);
@@ -24,6 +24,11 @@ namespace EventManager.WebAPI.Security
             {
                 claims.Add(new Claim(ClaimTypes.Name, subject));
                 claims.Add(new Claim(JwtRegisteredClaimNames.Sub, subject));
+            }
+
+            if (userId.HasValue)
+            {
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()));
             }
 
             // Add role claim for role-based authorization

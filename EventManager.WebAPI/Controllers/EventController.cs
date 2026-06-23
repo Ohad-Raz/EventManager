@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace EventManager.WebAPI.Controllers
 {
@@ -18,7 +20,6 @@ namespace EventManager.WebAPI.Controllers
         private readonly IEventTypeRepository _eventTypeRepository;
         private readonly IEventPerformerRepository _eventPerformerRepository;
         private readonly IPerformerRepository _performerRepository;
-        private readonly IUserRepository _userRepository;
         private readonly ILogRepository _logRepository;
 
         public EventController(
@@ -26,7 +27,6 @@ namespace EventManager.WebAPI.Controllers
             IEventTypeRepository eventTypeRepository,
             IEventPerformerRepository eventPerformerRepository,
             IPerformerRepository performerRepository,
-            IUserRepository userRepository,
             ILogRepository logRepository,
             IMapper mapper)
         {
@@ -34,7 +34,6 @@ namespace EventManager.WebAPI.Controllers
             _eventTypeRepository = eventTypeRepository;
             _eventPerformerRepository = eventPerformerRepository;
             _performerRepository = performerRepository;
-            _userRepository = userRepository;
             _logRepository = logRepository;
             _mapper = mapper;
         }
@@ -158,21 +157,14 @@ namespace EventManager.WebAPI.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                // 2. get logged-in username from JWT
-                string? username = HttpContext.User.Identity?.Name;//
+                // 2. read user id from JWT nameid claim
+                string? userIdClaim = User.FindFirstValue(JwtRegisteredClaimNames.NameId);
 
-                // 3. if identity is missing, return Unauthorized
-                if (string.IsNullOrEmpty(username))
-                    return Unauthorized("User identity is missing.");
+                // 3. if claim is missing or invalid, return Unauthorized
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                    return Unauthorized("User id claim is missing.");
 
-                // 4. load data for this request
-                User? existingUser = _userRepository.GetUserByUsername(username);//getting for createdby? maybe can use context instead to prevent round trip
-
-                // 5. if user not found, return NotFound
-                if (existingUser == null)
-                    return NotFound("User not found.");
-
-                // 6. validate referenced EventType
+                // 4. validate referenced EventType
                 EventType? existingEventType = _eventTypeRepository.GetEventTypeById(eventDto.EventTypeId);
 
                 if (existingEventType == null)
@@ -181,7 +173,7 @@ namespace EventManager.WebAPI.Controllers
                     return NotFound("Event type not found.");
                 }
 
-                // 7. validate optional Image
+                // 5. validate optional Image
                 if (eventDto.ImageId.HasValue)
                 {
                     Image? existingImage = _eventRepository.GetImageById(eventDto.ImageId.Value);
@@ -193,9 +185,9 @@ namespace EventManager.WebAPI.Controllers
                     }
                 }
 
-                // 8. create new Event entity
+                // 6. create new Event entity
                 Event newEvent = _mapper.Map<Event>(eventDto);
-                newEvent.CreatedById = existingUser.Id;
+                newEvent.CreatedById = userId;
 
                 // 9. save changes
                 _eventRepository.AddEvent(newEvent);

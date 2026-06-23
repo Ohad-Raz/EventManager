@@ -121,12 +121,13 @@ namespace EventManager.WebAPI.Controllers
                 // Read role name from related Role entity
                 string roleName = existingUser.Role.Name;
 
-                // Create token with username + role claim
+                // Create token with username, user id, and role claims
                 string serializedToken = JwtTokenProvider.CreateToken(
                     secureKey,
                     120,
                     existingUser.Username,
-                    roleName
+                    roleName,
+                    existingUser.Id
                 );
 
                 return Ok(serializedToken);
