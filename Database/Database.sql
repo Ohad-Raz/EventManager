@@ -280,7 +280,12 @@ VALUES
 (N'Career Branding Lecture', N'A lecture about personal branding, career development, and professional communication.', '2026-06-03 18:00:00', '2026-06-03 20:00:00', N'Lecture Room 204', 90, 2, 3, 3),
 (N'Agile Planning Workshop', N'A hands-on workshop about planning tasks, estimating work, and managing project risk.', '2026-06-07 11:00:00', '2026-06-07 15:00:00', N'Zagreb Hall B', 40, 3, 1, 1),
 (N'Evening Yoga Class', N'A calming wellness class for flexibility, balance, and stress relief.', '2026-06-11 19:00:00', '2026-06-11 20:15:00', N'Wellness Studio', 35, 4, 3, 4),
-(N'Startup Networking Night', N'A social networking event for students, founders, and young professionals.', '2026-06-18 18:30:00', '2026-06-18 21:00:00', N'Business Lounge Zagreb', 200, 5, 1, 5);
+(N'Startup Networking Night', N'A social networking event for students, founders, and young professionals.', '2026-06-18 18:30:00', '2026-06-18 21:00:00', N'Business Lounge Zagreb', 200, 5, 1, 5),
+(N'Jazz and Blues Evening', N'A live jazz and blues concert featuring local musicians.', '2026-06-25 19:00:00', '2026-06-25 21:30:00', N'Riverside Stage', 120, 1, 1, 2),
+(N'Time Management for Students', N'A lecture on planning study time, deadlines, and productivity habits.', '2026-06-28 17:00:00', '2026-06-28 18:30:00', N'Lecture Room 101', 70, 2, 3, 3),
+(N'UI Design Sprint Workshop', N'A hands-on workshop for wireframing, prototyping, and user feedback.', '2026-07-02 10:00:00', '2026-07-02 14:00:00', N'Design Lab Zagreb', 35, 3, 1, 1),
+(N'Saturday Pilates Class', N'A guided pilates session focused on core strength and posture.', '2026-07-05 09:00:00', '2026-07-05 10:00:00', N'Fitness Studio 2', 20, 4, 3, 4),
+(N'Developer Career Fair', N'A networking fair connecting students with software companies and mentors.', '2026-07-10 16:00:00', '2026-07-10 19:00:00', N'Tech Campus Hall', 180, 5, 1, 5);
 GO
 
 INSERT INTO dbo.EventPerformer (EventId, PerformerId) VALUES
@@ -300,7 +305,14 @@ INSERT INTO dbo.EventPerformer (EventId, PerformerId) VALUES
 (8, 6),
 (9, 7),
 (10, 6),
-(10, 8);
+(10, 8),
+(11, 1),
+(12, 3),
+(13, 5),
+(13, 6),
+(14, 7),
+(15, 6),
+(15, 8);
 GO
 
 INSERT INTO dbo.Registration (Name, UserId, EventId, IsActive) VALUES
@@ -317,6 +329,6 @@ GO
 
 INSERT INTO dbo.[Log] ([Timestamp], [Level], [Message]) VALUES
 (GETDATE(), 1, N'Database seed completed.'),
-(GETDATE(), 1, N'Seeded 10 sample events.'),
+(GETDATE(), 1, N'Seeded 15 sample events.'),
 (GETDATE(), 1, N'Seeded sample users, performers, registrations and event types.');
 GO

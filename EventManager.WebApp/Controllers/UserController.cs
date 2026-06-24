@@ -240,7 +240,7 @@ namespace EventManager.WebApp.Controllers
 
             _userRepository.SaveChanges();
 
-            return RedirectToAction("ProfileDetails");
+            return RedirectToAction(nameof(ProfileDetails));
         }
         [Authorize]
         public JsonResult GetProfileData(int id)
