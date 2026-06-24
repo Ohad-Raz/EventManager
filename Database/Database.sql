@@ -5,6 +5,9 @@
    - admin / 12345678
    - user1 / 12345678
    - organizer1 / 12345678
+   - john / 12345678
+   - maya / 12345678
+   - lea / 12345678
    ========================================================= */
 
 /* =========================================================
@@ -262,7 +265,10 @@ INSERT INTO dbo.[User]
 VALUES
 (N'admin',      N'7RXALyPLzM0XXj7qhqGmQrVm0EBxB9lyPmFV+24qTUU=', N'ifvbGMwQSx+RghdBcNFFYQ==', N'System', N'Admin',     N'admin@eventmanager.com',      N'0911111111', 1),
 (N'user1',      N'Kgiha/RXL8F9tP+qSpThvo206+MSjDllmnqm0xv3bOM=', N'Opp0zp7mgPtXc2O1JOSzPQ==', N'Ohad',   N'Raz',       N'user1@eventmanager.com',      N'0922222222', 2),
-(N'organizer1', N'wjF1H4qKcC1zFnWQO8vW+bQ0uaIdNA54ZnajLyB8hmE=', N'1gf8/rM7JLu9PdAmSQVqpw==', N'Nina',   N'Kovač',     N'organizer1@eventmanager.com', N'0933333333', 3);
+(N'organizer1', N'wjF1H4qKcC1zFnWQO8vW+bQ0uaIdNA54ZnajLyB8hmE=', N'1gf8/rM7JLu9PdAmSQVqpw==', N'Nina',   N'Kovač',     N'organizer1@eventmanager.com', N'0933333333', 3),
+(N'john',       N'wptgHBxLsPfo5BJOPRLv5xBi0ZDU4PSZLikGPRCh3I4=', N'pDe6w1FzXyjkhicOCtrHSg==', N'John',   N'Miller',    N'john.miller@example.com',     N'0944444444', 2),
+(N'maya',       N'1RwLtv4jNB93rwkQPmK/K2flyCehwJ13e2zM3Pd6TPM=', N'GYs+XfI2OXc2ip8HCJeYzw==', N'Maya',   N'Brooks',    N'maya.brooks@example.com',     N'0955555555', 2),
+(N'lea',        N'+R9nM8Ehg1FYLdSO+Es1neC4KYC0k+Rdc+Xfuss65bk=', N'H6V+QmAmSl3AOzBjtsad4g==', N'Lea',    N'Novak',     N'lea.novak@example.com',       N'0966666666', 2);
 GO
 
 INSERT INTO dbo.Event
@@ -314,8 +320,12 @@ INSERT INTO dbo.Registration (Name, UserId, EventId, IsActive) VALUES
 (N'Registration for Public Speaking Workshop', 2, 1, 1),
 (N'Registration for Leadership in Practice', 2, 3, 1),
 (N'Registration for Software Teams Meetup', 2, 5, 1),
-(N'Registration for Evening Yoga Class', 2, 9, 1),
-(N'Registration for Agile Planning Workshop', 3, 8, 1);
+(N'Registration for Evening Yoga Class', 2, 9, 0),
+(N'Registration for Spring Music Night', 4, 2, 1),
+(N'Registration for Acoustic Friday Session', 4, 6, 0),
+(N'Registration for Morning Functional Training', 5, 4, 1),
+(N'Registration for Career Branding Lecture', 5, 7, 0),
+(N'Registration for Startup Networking Night', 6, 10, 1);
 GO
 
 INSERT INTO dbo.[Log] ([Timestamp], [Level], [Message]) VALUES
