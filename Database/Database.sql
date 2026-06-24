@@ -11,19 +11,6 @@
    ========================================================= */
 
 /* =========================================================
-   CREATE DATABASE IF NEEDED
-   ========================================================= */
-
-IF DB_ID(N'EventManager') IS NULL
-BEGIN
-    CREATE DATABASE [EventManager];
-END
-GO
-
-USE [EventManager];
-GO
-
-/* =========================================================
    DROP TABLES FOR RE-RUN
    ========================================================= */
 
@@ -324,7 +311,7 @@ INSERT INTO dbo.Registration (Name, UserId, EventId, IsActive) VALUES
 (N'Registration for Spring Music Night', 4, 2, 1),
 (N'Registration for Acoustic Friday Session', 4, 6, 0),
 (N'Registration for Morning Functional Training', 5, 4, 1),
-(N'Registration for Career Branding Lecture', 5, 7, 0),
+(N'Registration for Career Branding Lecture', 5, 7, 1),
 (N'Registration for Startup Networking Night', 6, 10, 1);
 GO
 
