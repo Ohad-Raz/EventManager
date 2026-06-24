@@ -21,10 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="EventManager\WebAPI\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\EventManager.DAL\EventManager.DAL.csproj" />
   </ItemGroup>
 
