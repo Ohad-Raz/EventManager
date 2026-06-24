@@ -140,10 +140,11 @@ namespace EventManager.WebApp.Controllers
                 // 5. read role name from related Role entity
                 string roleName = existingUser.Role.Name;
 
-                // 6. create cookie claims with username and role
+                // 6. create cookie claims with username, database user id, and role
                 List<Claim> claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, existingUser.Username),
+                    new Claim(ClaimTypes.NameIdentifier, existingUser.Id.ToString()),
                     new Claim(ClaimTypes.Role, roleName)
                 };
 

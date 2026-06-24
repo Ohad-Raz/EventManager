@@ -23,11 +23,11 @@ namespace EventManager.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Creates a new event registration for the logged-in user.
+        /// Creates a new event registration for the logged-in user (User role only).
         /// Prevents duplicate registration for the same event.
         /// Endpoint: POST /api/Registration
         /// </summary>
-        [Authorize]
+        [Authorize(Roles = "User")]
         [HttpPost]
         public ActionResult<RegistrationDto> Post(RegistrationDto registrationDto)
         {
@@ -151,10 +151,10 @@ namespace EventManager.WebAPI.Controllers
         /// <summary>
         /// Returns registrations for the currently logged-in user.
         /// Includes related event data.
-        /// Available to any authenticated user.
+        /// Only Users can view their own registrations.
         /// Endpoint: GET /api/Registration/GetMyRegistrations
         /// </summary>
-        [Authorize]
+        [Authorize(Roles = "User")]
         [HttpGet("[action]")]
         public ActionResult<ICollection<RegistrationDetailsDto>> GetMyRegistrations()
         {

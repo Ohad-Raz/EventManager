@@ -59,22 +59,23 @@ builder.Services.AddDbContext<EventManagerDbContext>(options => {
     options.UseSqlServer("name=ConnectionStrings:DefaultConn");
 });
 // Configure JWT security services
-var secureKey = builder.Configuration["JWT:SecureKey"]//solving null possibility 
+var secureKey = builder.Configuration["JWT:SecureKey"]
     ?? throw new InvalidOperationException("JWT secure key is missing.");
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
     {
         var Key = Encoding.UTF8.GetBytes(secureKey);
-        // Keep JWT claim names predictable after token validation.
-        // The API uses unique_name for username, role for authorization, and nameid for the database user id.
+        // Keep JWT claim names as "unique_name", "sub", "nameid", and "role"
         o.MapInboundClaims = false;
         o.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = false,
             ValidateAudience = false,
             IssuerSigningKey = new SymmetricSecurityKey(Key),
+            // User.Identity.Name reads the "unique_name" claim
             NameClaimType = JwtRegisteredClaimNames.UniqueName,
+            // [Authorize(Roles = "...")] reads the "role" claim
             RoleClaimType = "role"
         };
     });
