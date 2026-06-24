@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
-using System.Runtime.Intrinsics.X86;
+using System.Security.Claims;
 
 namespace EventManager.WebApp.Controllers
 {
@@ -124,18 +124,18 @@ namespace EventManager.WebApp.Controllers
                 return View(model);
             }
 
-            // 2. resolve CreatedById using existing fallback
-            int? fallbackCreatedById = GetFallbackCreatedById();
-            if (!fallbackCreatedById.HasValue)
+            // 2. set CreatedById from logged-in Admin id in MVC cookie
+            string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdClaim, out int createdById))
             {
-                ModelState.AddModelError(string.Empty, "Cannot create event because no users exist.");
+                ModelState.AddModelError(string.Empty, "Cannot create event because the login session is missing the user id. Please log out and log in again.");
                 LoadEventDropdowns(selectedEventTypeId: model.EventTypeId, selectedImageId: model.ImageId);
                 return View(model);
             }
 
             // 3. map form model to Event entity
             Event newEvent = _mapper.Map<Event>(model);
-            newEvent.CreatedById = fallbackCreatedById.Value;
+            newEvent.CreatedById = createdById;
 
             // 4. save new event
             _eventRepository.AddEvent(newEvent);
@@ -163,18 +163,6 @@ namespace EventManager.WebApp.Controllers
                     events = events.Where(x => x.Capacity <= max.Value);
                 }
 
-                //var eventVms = events.Select(x => new EventVM
-                //{
-                //    Id = x.Id,
-                //    Name = x.Name,
-                //    Description = x.Description,
-                //    StartTime = x.StartTime,
-                //    EndTime = x.EndTime,
-                //    Location = x.Location,
-                //    Capacity = x.Capacity,
-                //    EventTypeId = x.EventTypeId,
-                //    EventTypeName = x.EventType.Name
-                //}).ToList();
                 List<EventVM> eventVms = events.Select(x => _mapper.Map<EventVM>(x)).ToList();
 
 
@@ -441,7 +429,7 @@ namespace EventManager.WebApp.Controllers
         }
 
         // POST: Event/Register/5
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "User")] // Only users can register for events.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Register(int id)
@@ -660,14 +648,6 @@ namespace EventManager.WebApp.Controllers
         private bool EventExists(int id)
         {
             return _eventRepository.EventExists(id);
-        }
-
-        // Returns fallback CreatedById using first available user.
-        private int? GetFallbackCreatedById()
-        {
-            List<User> users = _userRepository.GetAllUsers();
-            User? fallbackUser = users.FirstOrDefault();
-            return fallbackUser?.Id;
         }
 
         // Loads dropdown data needed by Create/Edit event forms.
